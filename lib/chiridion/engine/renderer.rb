@@ -2,29 +2,48 @@
 
 module Chiridion
   class Engine
-    # Renders documentation to markdown with wikilinks.
+    # Renders documentation to Obsidian-compatible markdown.
     #
     # Generates index files, class documentation, and module documentation
-    # with [[wikilinks]] for cross-references between classes.
+    # with wikilinks for cross-references within the Obsidian vault.
+    #
+    # ## Enhanced Frontmatter
+    #
+    # All generated documents include enhanced YAML frontmatter for Obsidian:
+    # - **Navigation**: parent links for breadcrumb traversal
+    # - **Discovery**: tags for filtering, related links for exploration
+    # - **Search**: aliases for finding by short name, description for preview
     class Renderer
-      def initialize(namespace_strip, include_specs, github_repo: nil, github_branch: "main")
+      def initialize(
+        namespace_strip:,
+        include_specs:,
+        root: Dir.pwd,
+        github_repo: nil,
+        github_branch: "main",
+        project_title: "API Documentation",
+        index_description: nil
+      )
         @namespace_strip = namespace_strip
         @include_specs = include_specs
-        @github_repo = github_repo
-        @github_branch = github_branch
-        @known_classes = {}
+        @root = root
+        @index_description = index_description || "Auto-generated from source code."
+        @class_linker = ClassLinker.new(namespace_strip: namespace_strip)
+        @constant_renderer = ConstantRenderer.new
+        @method_renderer = MethodRenderer.new(include_specs, class_linker: @class_linker)
+        @github_linker = GithubLinker.new(repo: github_repo, branch: github_branch, root: root)
+        @frontmatter_builder = FrontmatterBuilder.new(
+          @class_linker,
+          namespace_strip: namespace_strip,
+          project_title: project_title
+        )
       end
 
-      # Register known classes for cross-reference linking.
+      # Register known classes for cross-reference linking and inheritance.
       #
       # @param structure [Hash] Documentation structure from Extractor
       def register_classes(structure)
-        (structure[:classes] + structure[:modules]).each do |obj|
-          @known_classes[obj[:path]] = obj
-          # Also register short name
-          short = obj[:path].split("::").last
-          @known_classes[short] ||= obj
-        end
+        @class_linker.register_classes(structure)
+        @frontmatter_builder.register_inheritance(structure)
       end
 
       # Render the documentation index.
@@ -32,23 +51,21 @@ module Chiridion
       # @param structure [Hash] Documentation structure from Extractor
       # @return [String] Markdown index
       def render_index(structure)
+        frontmatter = @frontmatter_builder.build_index
         <<~MD
-          ---
-          generated: #{Time.now.utc.strftime("%Y-%m-%d %H:%M UTC")}
-          type: index
-          ---
+          #{render_frontmatter(frontmatter)}
 
-          # API Documentation
+          # #{frontmatter[:title]}
 
-          > Auto-generated from source code.
+          > #{@index_description}
 
           ## Classes
 
-          #{structure[:classes].map { |c| "- [[#{link_path(c[:path])}|#{c[:path]}]]" }.join("\n")}
+          #{structure[:classes].map { |c| "- [[#{link(c[:path])}|#{c[:path]}]]" }.join("\n")}
 
           ## Modules
 
-          #{structure[:modules].map { |m| "- [[#{link_path(m[:path])}|#{m[:path]}]]" }.join("\n")}
+          #{structure[:modules].map { |m| "- [[#{link(m[:path])}|#{m[:path]}]]" }.join("\n")}
         MD
       end
 
@@ -57,7 +74,9 @@ module Chiridion
       # @param klass [Hash] Class data from Extractor
       # @return [String] Markdown documentation
       def render_class(klass)
-        render_document(klass, format_title(klass))
+        title = format_class_title(klass)
+        sections = build_sections(klass, include_mixins: true)
+        render_document(klass, title, sections)
       end
 
       # Render module documentation.
@@ -65,94 +84,121 @@ module Chiridion
       # @param mod [Hash] Module data from Extractor
       # @return [String] Markdown documentation
       def render_module(mod)
-        render_document(mod, mod[:path])
+        sections = build_sections(mod, include_mixins: false)
+        render_document(mod, mod[:path], sections)
       end
 
       private
 
-      def format_title(klass)
-        if klass[:superclass] && klass[:superclass] != "Object"
-          "#{klass[:path]} < #{link_class(klass[:superclass])}"
-        else
-          klass[:path]
-        end
+      # Format class title (just the path - inheritance is in frontmatter).
+      def format_class_title(klass)
+        klass[:path]
       end
 
-      def render_document(obj, title)
-        sections = []
-        sections << render_mixins(obj)
-        sections << render_examples(obj[:examples])
-        sections << render_spec_examples(obj) if @include_specs
-        sections << render_see_also(obj[:see_also])
-        sections << render_constants(obj[:constants])
-        sections << render_methods(obj[:methods])
+      def build_sections(obj, include_mixins:)
+        parts = []
+        parts << render_mixins(obj) if include_mixins
+        parts << render_yard_examples(obj[:examples])
+        parts << render_spec_examples(obj)
+        parts << render_see_also(obj[:see_also], obj[:path])
+        # ToC removed - now in frontmatter (constants:, methods:)
+        parts << @constant_renderer.render(obj[:constants])
+        parts << render_methods(obj[:methods], obj[:path])
+        parts.reject(&:empty?).join("\n\n")
+      end
 
+      def render_document(obj, title, sections)
+        frontmatter = @frontmatter_builder.build(obj)
+        # Convert absolute paths to relative
+        frontmatter[:source] = relative_path(frontmatter[:source])
+        frontmatter[:source] = format_source_with_lines(frontmatter[:source], obj[:line], obj[:end_line])
+        frontmatter[:source_url] = @github_linker.url(
+          frontmatter[:source].split(":").first,
+          obj[:line],
+          obj[:end_line]
+        )
+        docstring = @class_linker.linkify_docstring(obj[:docstring], context: obj[:path])
         <<~MD
-          #{render_frontmatter(obj)}
+          #{render_frontmatter(frontmatter)}
 
           # #{title}
 
-          #{linkify(obj[:docstring])}
+          #{docstring}
 
-          #{sections.reject(&:empty?).join("\n\n")}
+          #{sections}
         MD
       end
 
-      def render_frontmatter(obj)
+      # Render frontmatter hash to YAML.
+      #
+      # Uses flow style [a, b, c] for compact arrays (methods, constants, tags).
+      # Uses block style for arrays with wikilinks (related, inherited_by).
+      # Omits nil values.
+      def render_frontmatter(fm)
+        # Fields that should use block style (contain wikilinks or long values)
+        block_style_fields = %i[related inherited_by]
+
         lines = ["---"]
-        lines << "generated: #{Time.now.utc.strftime("%Y-%m-%d %H:%M UTC")}"
-        lines << "source: #{format_source(obj)}"
-        lines << "source_url: #{github_url(obj)}" if @github_repo
-        lines << "type: #{obj[:type]}"
-        lines << "parent: #{obj[:superclass]}" if obj[:superclass] && obj[:superclass] != "Object"
+        fm.each do |key, value|
+          next if value.nil?
+
+          if value.is_a?(Array)
+            if block_style_fields.include?(key)
+              lines << "#{key}:"
+              value.each { |v| lines << "  - #{v}" }
+            else
+              lines << "#{key}: [#{value.join(', ')}]"
+            end
+          else
+            lines << "#{key}: #{value}"
+          end
+        end
         lines << "---"
         lines.join("\n")
       end
 
-      def format_source(obj)
-        return obj[:file] unless obj[:line]
+      def relative_path(absolute_path)
+        return absolute_path unless absolute_path&.start_with?(@root)
 
-        if obj[:end_line] && obj[:end_line] != obj[:line]
-          "#{obj[:file]}:#{obj[:line]}-#{obj[:end_line]}"
-        else
-          "#{obj[:file]}:#{obj[:line]}"
-        end
+        absolute_path.delete_prefix("#{@root}/")
       end
 
-      def github_url(obj)
-        return nil unless @github_repo && obj[:file]
-
-        base = "https://github.com/#{@github_repo}/blob/#{@github_branch}/#{obj[:file]}"
-        obj[:line] ? "#{base}#L#{obj[:line]}" : base
+      def link(class_path)
+        stripped = @namespace_strip ? class_path.sub(/^#{Regexp.escape(@namespace_strip)}/, "") : class_path
+        parts = stripped.split("::")
+        kebab_parts = parts.map { |p| to_kebab_case(p) }
+        File.join(*kebab_parts[0..-2], kebab_parts.last)
       end
 
-      def render_mixins(obj)
+      def render_mixins(klass)
+        return "" unless klass[:includes].any? || klass[:extends].any?
+
         parts = []
-        if obj[:includes]&.any?
-          linked = obj[:includes].map { |m| link_class(m) }
-          parts << "**Includes:** #{linked.join(", ")}"
+        if klass[:includes].any?
+          linked = klass[:includes].map { |m| @class_linker.link(m, context: klass[:path]) }
+          parts << "**Includes:** #{linked.join(', ')}"
         end
-        if obj[:extends]&.any?
-          linked = obj[:extends].map { |m| link_class(m) }
-          parts << "**Extends:** #{linked.join(", ")}"
+        if klass[:extends].any?
+          linked = klass[:extends].map { |m| @class_linker.link(m, context: klass[:path]) }
+          parts << "**Extended by:** #{linked.join(', ')}"
         end
         parts.join(" · ")
       end
 
-      def render_see_also(see_tags)
+      def render_see_also(see_tags, context)
         return "" if see_tags.nil? || see_tags.empty?
 
         links = see_tags.map do |tag|
-          link = link_class(tag[:name])
+          link = @class_linker.link(tag[:name], context: context)
           tag[:text].to_s.empty? ? link : "#{link} — #{tag[:text]}"
         end
-        "**See also:** #{links.join(" · ")}"
+        "**See also:** #{links.join(' · ')}"
       end
 
-      def render_examples(examples)
+      def render_yard_examples(examples)
         return "" if examples.nil? || examples.empty?
 
-        parts = ["## Examples"]
+        parts = ["## Example"]
         examples.each do |ex|
           parts << "**#{ex[:name]}**" unless ex[:name].to_s.empty?
           parts << "```ruby\n#{ex[:text]}\n```"
@@ -161,117 +207,36 @@ module Chiridion
       end
 
       def render_spec_examples(obj)
-        return "" unless obj[:spec_examples]
+        return "" unless @include_specs && obj[:spec_examples]
 
         ex = obj[:spec_examples]
         return "" if ex[:lets].empty? && ex[:subjects].empty?
 
-        parts = ["## Usage (from specs)"]
-        ex[:subjects].each { |e| parts << "```ruby\n#{e[:code]}\n```" }
-        ex[:lets].first(5).each { |e| parts << "**#{e[:name]}:** `#{e[:code]}`" }
+        parts = ["## Usage Examples (from specs)"]
+        ex[:subjects].each { |e| parts << "**#{e[:name]}:**\n\n```ruby\n#{clean(e[:code], obj[:path])}\n```" }
+        ex[:lets].first(5).each { |e| parts << "**#{e[:name]}:**\n\n```ruby\n#{clean(e[:code], obj[:path])}\n```" }
         parts.join("\n\n")
       end
 
-      def render_constants(constants)
-        return "" if constants.nil? || constants.empty?
-
-        parts = ["## Constants"]
-        constants.each do |c|
-          parts << "### `#{c[:name]}`"
-          parts << c[:docstring] unless c[:docstring].empty?
-          parts << "```ruby\n#{c[:name]} = #{c[:value]}\n```" if c[:value]
-        end
-        parts.join("\n\n")
+      def clean(code, class_path)
+        code.gsub("described_class", class_path.split("::").last).strip
       end
 
-      def render_methods(methods)
-        return "" if methods.nil? || methods.empty?
+      def format_source_with_lines(path, start_line, end_line)
+        return path unless start_line
 
-        class_methods = methods.select { |m| m[:scope] == :class }
-        instance_methods = methods.select { |m| m[:scope] == :instance }
-
-        parts = ["## Methods"]
-        parts << render_method_group("Class Methods", class_methods) if class_methods.any?
-        parts << render_method_group("Instance Methods", instance_methods) if instance_methods.any?
-        parts.join("\n\n")
-      end
-
-      def render_method_group(title, methods)
-        parts = ["### #{title}"]
-        methods.each do |m|
-          parts << render_method(m)
-        end
-        parts.join("\n\n")
-      end
-
-      def render_method(m)
-        prefix = m[:scope] == :class ? "." : "#"
-        sig = m[:rbs_type] || format_signature(m)
-
-        parts = []
-        parts << "#### `#{prefix}#{m[:name]}`"
-        parts << "```rbs\n#{sig}\n```" if sig
-        parts << linkify(m[:docstring]) unless m[:docstring].empty?
-        parts << render_params(m[:params]) if m[:params]&.any?
-        parts << render_return(m[:returns]) if m[:returns]
-        parts << render_examples(m[:examples]) if m[:examples]&.any?
-        parts.join("\n\n")
-      end
-
-      def format_signature(m)
-        return nil if m[:params].nil? || m[:params].empty?
-
-        params = m[:params].map do |p|
-          type = p[:types]&.first || "untyped"
-          "#{type} #{p[:name]}"
-        end
-        ret = m[:returns]&.dig(:types)&.first || "void"
-        "(#{params.join(", ")}) -> #{ret}"
-      end
-
-      def render_params(params)
-        return "" if params.empty?
-
-        lines = params.map do |p|
-          type = p[:types]&.first || "untyped"
-          desc = p[:text] || ""
-          "- `#{p[:name]}` (`#{type}`) #{desc}".strip
-        end
-        "**Parameters:**\n#{lines.join("\n")}"
-      end
-
-      def render_return(ret)
-        return "" unless ret
-
-        type = ret[:types]&.first || "untyped"
-        desc = ret[:text] || ""
-        "**Returns:** `#{type}` #{desc}".strip
-      end
-
-      # Convert class references in text to wikilinks.
-      def linkify(text)
-        return "" if text.nil? || text.empty?
-
-        # Match {ClassName} or {Class::Name} patterns from YARD
-        text.gsub(/\{([A-Z][\w:]+)\}/) do |_match|
-          class_name = Regexp.last_match(1)
-          link_class(class_name)
+        if end_line && end_line != start_line
+          "#{path}:#{start_line}–#{end_line}"
+        else
+          "#{path}:#{start_line}"
         end
       end
 
-      # Create a wikilink for a class/module.
-      def link_class(class_path)
-        return class_path unless @known_classes.key?(class_path)
+      def render_methods(methods, context)
+        return "" if methods.empty?
 
-        "[[#{link_path(class_path)}|#{class_path}]]"
-      end
-
-      # Convert class path to file path for wikilinks.
-      def link_path(class_path)
-        stripped = @namespace_strip ? class_path.sub(/^#{Regexp.escape(@namespace_strip)}/, "") : class_path
-        parts = stripped.split("::")
-        kebab_parts = parts.map { |p| to_kebab_case(p) }
-        kebab_parts.join("/")
+        rendered = methods.map { |m| @method_renderer.render(m, context: context) }.join("\n\n\n---\n")
+        "## Methods\n\n#{rendered}"
       end
 
       def to_kebab_case(str)

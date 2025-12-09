@@ -59,6 +59,8 @@ module Chiridion
     # @param spec_path [String] Path to spec directory.
     # @param github_repo [String, nil] GitHub repository for source links.
     # @param github_branch [String] Git branch for source links.
+    # @param project_title [String] Title for the documentation index.
+    # @param index_description [String, nil] Custom description for the index page.
     def initialize(
       paths:,
       output:,
@@ -71,7 +73,9 @@ module Chiridion
       rbs_path: "sig",
       spec_path: "spec",
       github_repo: nil,
-      github_branch: "main"
+      github_branch: "main",
+      project_title: "API Documentation",
+      index_description: nil
     )
       @paths = Array(paths)
       @output = output
@@ -85,6 +89,8 @@ module Chiridion
       @spec_path = spec_path
       @github_repo = github_repo
       @github_branch = github_branch
+      @project_title = project_title
+      @index_description = index_description
     end
 
     # Generate documentation from source and write to output directory.
@@ -198,8 +204,11 @@ module Chiridion
         @include_specs,
         @verbose,
         @logger,
+        root: @root,
         github_repo: @github_repo,
-        github_branch: @github_branch
+        github_branch: @github_branch,
+        project_title: @project_title,
+        index_description: @index_description
       ).write(structure)
     end
 
@@ -209,7 +218,11 @@ module Chiridion
         @namespace_strip,
         @include_specs,
         @verbose,
-        @logger
+        @logger,
+        root: @root,
+        github_repo: @github_repo,
+        github_branch: @github_branch,
+        project_title: @project_title
       ).check(structure)
     end
 
@@ -243,6 +256,11 @@ require_relative "engine/rbs_loader"
 require_relative "engine/inline_rbs_loader"
 require_relative "engine/spec_example_loader"
 require_relative "engine/type_merger"
+require_relative "engine/class_linker"
+require_relative "engine/github_linker"
+require_relative "engine/frontmatter_builder"
+require_relative "engine/constant_renderer"
+require_relative "engine/method_renderer"
 require_relative "engine/renderer"
 require_relative "engine/writer"
 require_relative "engine/drift_checker"

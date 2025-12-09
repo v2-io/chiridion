@@ -9,12 +9,32 @@ module Chiridion
     # Handles smart write detection to avoid unnecessary file updates when
     # only timestamps have changed but content is identical.
     class Writer
-      def initialize(output, namespace_strip, include_specs, verbose, logger, github_repo: nil, github_branch: "main")
+      def initialize(
+        output,
+        namespace_strip,
+        include_specs,
+        verbose,
+        logger,
+        root: Dir.pwd,
+        github_repo: nil,
+        github_branch: "main",
+        project_title: "API Documentation",
+        index_description: nil
+      )
         @output = output
         @namespace_strip = namespace_strip
         @verbose = verbose
         @logger = logger
-        @renderer = Renderer.new(namespace_strip, include_specs, github_repo: github_repo, github_branch: github_branch)
+        @root = root
+        @renderer = Renderer.new(
+          namespace_strip: namespace_strip,
+          include_specs: include_specs,
+          root: root,
+          github_repo: github_repo,
+          github_branch: github_branch,
+          project_title: project_title,
+          index_description: index_description
+        )
       end
 
       # Write all documentation files.

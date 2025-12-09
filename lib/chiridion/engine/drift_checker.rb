@@ -7,13 +7,30 @@ module Chiridion
     # Compares what would be generated against existing files.
     # Useful in CI pipelines to enforce documentation currency.
     class DriftChecker
-      def initialize(output, namespace_strip, include_specs, verbose, logger)
+      def initialize(
+        output,
+        namespace_strip,
+        include_specs,
+        verbose,
+        logger,
+        root: Dir.pwd,
+        github_repo: nil,
+        github_branch: "main",
+        project_title: "API Documentation"
+      )
         @output = output
         @namespace_strip = namespace_strip
         @include_specs = include_specs
         @verbose = verbose
         @logger = logger
-        @renderer = Renderer.new(namespace_strip, include_specs)
+        @renderer = Renderer.new(
+          namespace_strip: namespace_strip,
+          include_specs: include_specs,
+          root: root,
+          github_repo: github_repo,
+          github_branch: github_branch,
+          project_title: project_title
+        )
       end
 
       # Check for drift between source and existing documentation.
