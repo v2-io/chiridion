@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "time"
+
 module Chiridion
   class Engine
     # Builds enhanced YAML frontmatter for documentation files.
