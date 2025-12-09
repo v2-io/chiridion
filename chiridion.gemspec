@@ -27,12 +27,13 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
 
-  spec.files = Dir.glob("{lib,sig,exe}/**/*") + %w[README.md LICENSE.txt CHANGELOG.md]
+  spec.files = Dir.glob("{lib,sig,exe,templates}/**/*") + %w[README.md LICENSE.txt CHANGELOG.md]
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
   # Runtime dependencies
+  spec.add_dependency "liquid", "~> 5.5"
   spec.add_dependency "yard", "~> 0.9"
 
   # Development dependencies

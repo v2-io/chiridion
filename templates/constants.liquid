@@ -1,0 +1,26 @@
+{% comment %}
+Constants section template.
+Variables:
+  - constants: Array of {name:, value:, docstring:, is_complex:}
+  - complex_constants: Array of complex constants for separate rendering
+{% endcomment %}
+## Constants
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+{% for c in constants %}{%- if c.is_complex -%}
+| `{{ c.name }}` | *(see below)* | {{ c.docstring | strip_newlines }} |
+{%- else -%}
+| `{{ c.name }}` | `{{ c.value | escape_pipes }}` | {{ c.docstring | strip_newlines }} |
+{%- endif %}
+{% endfor %}
+{% for c in complex_constants %}
+
+### {{ c.name }}
+{% if c.docstring != blank %}
+
+{{ c.docstring }}{% endif %}
+
+```ruby
+{{ c.name }} = {{ c.value }}
+```{% endfor %}

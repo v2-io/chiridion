@@ -4,8 +4,14 @@ module Chiridion
   class Engine
     # Renders documentation to Obsidian-compatible markdown.
     #
-    # Generates index files, class documentation, and module documentation
-    # with wikilinks for cross-references within the Obsidian vault.
+    # Uses Liquid templates for the document body content, while YAML frontmatter
+    # is rendered directly in Ruby due to its complex formatting requirements
+    # (flow vs block arrays, proper quoting, etc.).
+    #
+    # ## Template Customization
+    #
+    # Templates are loaded from the gem's templates/ directory by default.
+    # Override by passing a custom templates_path to the constructor.
     #
     # ## Enhanced Frontmatter
     #
@@ -21,21 +27,21 @@ module Chiridion
         github_repo: nil,
         github_branch: "main",
         project_title: "API Documentation",
-        index_description: nil
+        index_description: nil,
+        templates_path: nil
       )
         @namespace_strip = namespace_strip
         @include_specs = include_specs
         @root = root
         @index_description = index_description || "Auto-generated from source code."
         @class_linker = ClassLinker.new(namespace_strip: namespace_strip)
-        @constant_renderer = ConstantRenderer.new
-        @method_renderer = MethodRenderer.new(include_specs, class_linker: @class_linker)
         @github_linker = GithubLinker.new(repo: github_repo, branch: github_branch, root: root)
         @frontmatter_builder = FrontmatterBuilder.new(
           @class_linker,
           namespace_strip: namespace_strip,
           project_title: project_title
         )
+        @template_renderer = TemplateRenderer.new(templates_path: templates_path)
       end
 
       # Register known classes for cross-reference linking and inheritance.
@@ -52,21 +58,23 @@ module Chiridion
       # @return [String] Markdown index
       def render_index(structure)
         frontmatter = @frontmatter_builder.build_index
-        <<~MD
-          #{render_frontmatter(frontmatter)}
 
-          # #{frontmatter[:title]}
+        classes = structure[:classes].map do |c|
+          { path: c[:path], link_path: link(c[:path]) }
+        end
 
-          > #{@index_description}
+        modules = structure[:modules].map do |m|
+          { path: m[:path], link_path: link(m[:path]) }
+        end
 
-          ## Classes
+        body = @template_renderer.render_index(
+          title: frontmatter[:title],
+          description: @index_description,
+          classes: classes,
+          modules: modules
+        )
 
-          #{structure[:classes].map { |c| "- [[#{link(c[:path])}|#{c[:path]}]]" }.join("\n")}
-
-          ## Modules
-
-          #{structure[:modules].map { |m| "- [[#{link(m[:path])}|#{m[:path]}]]" }.join("\n")}
-        MD
+        "#{render_frontmatter(frontmatter)}\n\n#{body}\n"
       end
 
       # Render class documentation.
@@ -74,9 +82,7 @@ module Chiridion
       # @param klass [Hash] Class data from Extractor
       # @return [String] Markdown documentation
       def render_class(klass)
-        title = format_class_title(klass)
-        sections = build_sections(klass, include_mixins: true)
-        render_document(klass, title, sections)
+        render_document(klass, include_mixins: true)
       end
 
       # Render module documentation.
@@ -84,30 +90,30 @@ module Chiridion
       # @param mod [Hash] Module data from Extractor
       # @return [String] Markdown documentation
       def render_module(mod)
-        sections = build_sections(mod, include_mixins: false)
-        render_document(mod, mod[:path], sections)
+        render_document(mod, include_mixins: false)
       end
 
       private
 
-      # Format class title (just the path - inheritance is in frontmatter).
-      def format_class_title(klass)
-        klass[:path]
+      def render_document(obj, include_mixins:)
+        frontmatter = build_document_frontmatter(obj)
+        docstring = @class_linker.linkify_docstring(obj[:docstring], context: obj[:path])
+
+        body = @template_renderer.render_document(
+          title: obj[:path],
+          docstring: docstring,
+          mixins: include_mixins ? render_mixins(obj) : nil,
+          examples: obj[:examples] || [],
+          spec_examples: render_spec_examples(obj),
+          see_also: render_see_also(obj[:see_also], obj[:path]),
+          constants_section: render_constants(obj[:constants]),
+          methods_section: render_methods(obj[:methods], obj[:path])
+        )
+
+        "#{render_frontmatter(frontmatter)}\n\n#{body}\n"
       end
 
-      def build_sections(obj, include_mixins:)
-        parts = []
-        parts << render_mixins(obj) if include_mixins
-        parts << render_yard_examples(obj[:examples])
-        parts << render_spec_examples(obj)
-        parts << render_see_also(obj[:see_also], obj[:path])
-        # ToC removed - now in frontmatter (constants:, methods:)
-        parts << @constant_renderer.render(obj[:constants])
-        parts << render_methods(obj[:methods], obj[:path])
-        parts.reject(&:empty?).join("\n\n")
-      end
-
-      def render_document(obj, title, sections)
+      def build_document_frontmatter(obj)
         frontmatter = @frontmatter_builder.build(obj)
         # Convert absolute paths to relative
         frontmatter[:source] = relative_path(frontmatter[:source])
@@ -117,16 +123,7 @@ module Chiridion
           obj[:line],
           obj[:end_line]
         )
-        docstring = @class_linker.linkify_docstring(obj[:docstring], context: obj[:path])
-        <<~MD
-          #{render_frontmatter(frontmatter)}
-
-          # #{title}
-
-          #{docstring}
-
-          #{sections}
-        MD
+        frontmatter
       end
 
       # Render frontmatter hash to YAML.
@@ -135,7 +132,6 @@ module Chiridion
       # Uses block style for arrays with wikilinks (related, inherited_by).
       # Omits nil values.
       def render_frontmatter(fm)
-        # Fields that should use block style (contain wikilinks or long values)
         block_style_fields = %i[related inherited_by]
 
         lines = ["---"]
@@ -171,7 +167,7 @@ module Chiridion
       end
 
       def render_mixins(klass)
-        return "" unless klass[:includes].any? || klass[:extends].any?
+        return nil unless klass[:includes].any? || klass[:extends].any?
 
         parts = []
         if klass[:includes].any?
@@ -186,31 +182,20 @@ module Chiridion
       end
 
       def render_see_also(see_tags, context)
-        return "" if see_tags.nil? || see_tags.empty?
+        return nil if see_tags.nil? || see_tags.empty?
 
         links = see_tags.map do |tag|
-          link = @class_linker.link(tag[:name], context: context)
-          tag[:text].to_s.empty? ? link : "#{link} — #{tag[:text]}"
+          link_text = @class_linker.link(tag[:name], context: context)
+          tag[:text].to_s.empty? ? link_text : "#{link_text} — #{tag[:text]}"
         end
         "**See also:** #{links.join(' · ')}"
       end
 
-      def render_yard_examples(examples)
-        return "" if examples.nil? || examples.empty?
-
-        parts = ["## Example"]
-        examples.each do |ex|
-          parts << "**#{ex[:name]}**" unless ex[:name].to_s.empty?
-          parts << "```ruby\n#{ex[:text]}\n```"
-        end
-        parts.join("\n\n")
-      end
-
       def render_spec_examples(obj)
-        return "" unless @include_specs && obj[:spec_examples]
+        return nil unless @include_specs && obj[:spec_examples]
 
         ex = obj[:spec_examples]
-        return "" if ex[:lets].empty? && ex[:subjects].empty?
+        return nil if ex[:lets].empty? && ex[:subjects].empty?
 
         parts = ["## Usage Examples (from specs)"]
         ex[:subjects].each { |e| parts << "**#{e[:name]}:**\n\n```ruby\n#{clean(e[:code], obj[:path])}\n```" }
@@ -232,11 +217,133 @@ module Chiridion
         end
       end
 
-      def render_methods(methods, context)
-        return "" if methods.empty?
+      def render_constants(constants)
+        return "" if constants.nil? || constants.empty?
 
-        rendered = methods.map { |m| @method_renderer.render(m, context: context) }.join("\n\n\n---\n")
+        simple, complex = partition_constants(constants)
+
+        constant_data = constants.map do |c|
+          {
+            name: c[:name],
+            value: format_constant_value(c[:value], complex.include?(c)),
+            docstring: c[:docstring].to_s,
+            is_complex: complex.include?(c)
+          }
+        end
+
+        complex_data = complex.map do |c|
+          {
+            name: c[:name],
+            value: strip_freeze(c[:value]),
+            docstring: c[:docstring].to_s
+          }
+        end
+
+        @template_renderer.render_constants(
+          constants: constant_data,
+          complex_constants: complex_data
+        )
+      end
+
+      def partition_constants(constants)
+        constants.partition { |c| c[:value].to_s.count("\n") <= 1 }
+      end
+
+      def format_constant_value(value, is_complex)
+        return "" if is_complex
+        return "nil" if value.nil?
+
+        strip_freeze(value.to_s).gsub("|", "\\|").gsub("\n", "<br />")
+      end
+
+      def strip_freeze(str)
+        str.to_s.delete_suffix(".freeze")
+      end
+
+      def render_methods(methods, context)
+        return "" if methods.nil? || methods.empty?
+
+        rendered = methods.map { |m| render_method(m, context) }.join("\n\n---\n\n")
         "## Methods\n\n#{rendered}"
+      end
+
+      def render_method(meth, context)
+        display_name = method_display_name(meth)
+        docstring = useful_docstring?(meth[:docstring]) ? @class_linker.linkify_docstring(meth[:docstring], context: context) : nil
+
+        @template_renderer.render_method(
+          display_name: display_name,
+          has_params: meth[:params]&.any?,
+          docstring: docstring,
+          params: render_params_with_types(meth[:params]),
+          return_line: render_return_line(meth),
+          examples: meth[:examples] || [],
+          behaviors: @include_specs ? (meth[:spec_behaviors] || []).first(8) : [],
+          spec_examples: @include_specs ? (meth[:spec_examples] || []).first(3) : []
+        )
+      end
+
+      def method_display_name(meth)
+        return "#{meth[:class_name]}.new" if meth[:name] == :initialize
+        return "#{meth[:class_name]}.#{meth[:name]}" if meth[:scope] == :class
+
+        meth[:name].to_s
+      end
+
+      def useful_docstring?(docstring)
+        return false if docstring.to_s.empty?
+        return false if docstring.match?(/\AReturns the value of attribute \w+\.?\z/)
+
+        true
+      end
+
+      def render_params_with_types(params)
+        return [] if params.nil? || params.empty?
+
+        max_name_len = params.map { |p| clean_param_name(p[:name]).length }.max
+        params.map { |p| format_param(p, max_name_len) }
+      end
+
+      def format_param(param, max_name_len)
+        name = clean_param_name(param[:name])
+        prefix = extract_param_prefix(param[:name])
+        type = normalize_type(param[:types]&.first || "untyped")
+        default = param[:default]
+        desc = param[:text].to_s
+        padded = name.ljust(max_name_len)
+
+        inner = default ? "#{prefix}#{padded} : #{type} = #{default}" : "#{prefix}#{padded} : #{type}"
+        desc.empty? ? "⟨#{inner}⟩" : "⟨#{inner}⟩ → #{desc}"
+      end
+
+      def clean_param_name(name)
+        name.to_s.delete_prefix("*").delete_prefix("*").delete_prefix("&").chomp(":")
+      end
+
+      def extract_param_prefix(name)
+        str = name.to_s
+        return "**" if str.start_with?("**")
+        return "*" if str.start_with?("*")
+        return "&" if str.start_with?("&")
+
+        ""
+      end
+
+      def normalize_type(type)
+        type.tr("<", "[").tr(">", "]")
+      end
+
+      def render_return_line(meth)
+        returns = meth[:returns]
+        return nil unless returns
+
+        type = returns[:types]&.first
+        type = meth[:class_name] if meth[:name] == :initialize && type == "void"
+        return nil if type.nil? || type == "void"
+
+        type = normalize_type(type)
+        desc = returns[:text].to_s
+        desc.empty? ? "→ #{type}" : "→ #{type} — #{desc}"
       end
 
       def to_kebab_case(str)
