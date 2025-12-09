@@ -263,8 +263,8 @@ module Chiridion
       def render_methods(methods, context)
         return "" if methods.nil? || methods.empty?
 
-        rendered = methods.map { |m| render_method(m, context) }.join("\n\n---\n\n")
-        "## Methods\n\n#{rendered}"
+        rendered_methods = methods.map { |m| render_method(m, context) }
+        @template_renderer.render_methods(methods: rendered_methods)
       end
 
       def render_method(meth, context)

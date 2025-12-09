@@ -1,0 +1,11 @@
+{%- comment -%}Methods section template. --- is an overline for each method after the first.{%- endcomment -%}
+## Methods
+
+{% for method in methods -%}
+{%- unless forloop.first %}
+
+
+---
+{% endunless -%}
+{{ method }}
+{%- endfor -%}

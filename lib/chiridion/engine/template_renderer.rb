@@ -133,6 +133,16 @@ module Chiridion
         })
       end
 
+      # Render the methods section with separators.
+      #
+      # @param methods [Array<String>] Pre-rendered method strings
+      # @return [String] Rendered markdown
+      def render_methods(methods:)
+        render("methods", {
+          "methods" => methods
+        })
+      end
+
       # Render the constants section.
       #
       # @param constants [Array<Hash>] Constants with :name, :value, :docstring, :is_complex

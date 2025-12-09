@@ -1,40 +1,40 @@
-{% comment %}
-Class/module document template.
-Variables:
-  - title: Class/module name (full path)
-  - docstring: Main documentation text (already linkified)
-  - mixins: Optional mixin string (e.g., "**Includes:** ...")
-  - examples: Array of {name:, text:} for YARD @example tags
-  - spec_examples: Optional spec examples section
-  - see_also: Optional see also string
-  - constants_section: Rendered constants (from ConstantRenderer)
-  - methods_section: Rendered methods (from MethodRenderer)
-{% endcomment %}
+{%- comment -%}Class/module document template.{%- endcomment -%}
 # {{ title }}
 
 {{ docstring }}
-{% if mixins %}
+{%- if mixins %}
 
-{{ mixins }}{% endif %}
-{% if examples.size > 0 %}
+{{ mixins }}
+{%- endif -%}
+{%- if examples.size > 0 %}
 
 ## Example
-{% for ex in examples %}
-{% if ex.name != blank %}**{{ ex.name }}**
+{%- for ex in examples %}
+{%- if ex.name != blank %}
 
-{% endif %}```ruby
+**{{ ex.name }}**
+{%- endif %}
+
+```ruby
 {{ ex.text }}
 ```
-{% endfor %}{% endif %}
-{% if spec_examples %}
+{%- unless forloop.last %}
+{% endunless -%}
+{%- endfor -%}
+{%- endif -%}
+{%- if spec_examples %}
 
-{{ spec_examples }}{% endif %}
-{% if see_also %}
+{{ spec_examples }}
+{%- endif -%}
+{%- if see_also %}
 
-{{ see_also }}{% endif %}
-{% if constants_section != blank %}
+{{ see_also }}
+{%- endif -%}
+{%- if constants_section != blank %}
 
-{{ constants_section }}{% endif %}
-{% if methods_section != blank %}
+{{ constants_section }}
+{%- endif -%}
+{%- if methods_section != blank %}
 
-{{ methods_section }}{% endif %}
+{{ methods_section }}
+{%- endif -%}
