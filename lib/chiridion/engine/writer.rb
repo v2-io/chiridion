@@ -19,21 +19,23 @@ module Chiridion
         github_repo: nil,
         github_branch: "main",
         project_title: "API Documentation",
-        index_description: nil
+        index_description: nil,
+        inline_source_threshold: 10
       )
-        @output = output
+        @output          = output
         @namespace_strip = namespace_strip
-        @verbose = verbose
-        @logger = logger
-        @root = root
-        @renderer = Renderer.new(
-          namespace_strip: namespace_strip,
-          include_specs: include_specs,
-          root: root,
-          github_repo: github_repo,
-          github_branch: github_branch,
-          project_title: project_title,
-          index_description: index_description
+        @verbose         = verbose
+        @logger          = logger
+        @root            = root
+        @renderer        = Renderer.new(
+          namespace_strip:         namespace_strip,
+          include_specs:           include_specs,
+          root:                    root,
+          github_repo:             github_repo,
+          github_branch:           github_branch,
+          project_title:           project_title,
+          index_description:       index_description,
+          inline_source_threshold: inline_source_threshold
         )
       end
 
@@ -64,12 +66,13 @@ module Chiridion
         content = @renderer.render_type_aliases(type_aliases)
         return if content.nil?
 
-        wrote = write_file(File.join(@output, "type-aliases.md"), content)
+        wrote                                = write_file(File.join(@output, "type-aliases.md"), content)
         counts[wrote ? :written : :skipped] += 1
       end
 
       def write_index(structure, counts)
-        wrote = write_file(File.join(@output, "index.md"), @renderer.render_index(structure))
+        wrote                                = write_file(File.join(@output, "index.md"),
+                                                          @renderer.render_index(structure))
         counts[wrote ? :written : :skipped] += 1
       end
 
@@ -82,12 +85,12 @@ module Chiridion
       end
 
       def write_object(obj, counts)
-        path = output_path(obj[:path])
+        path                                 = output_path(obj[:path])
         FileUtils.mkdir_p(File.dirname(path))
-        content = obj[:type] == :class ? @renderer.render_class(obj) : @renderer.render_module(obj)
-        wrote = write_file(path, content)
+        content                              = obj[:type] == :class ? @renderer.render_class(obj) : @renderer.render_module(obj)
+        wrote                                = write_file(path, content)
         counts[wrote ? :written : :skipped] += 1
-        @logger.info "  #{wrote ? "Wrote" : "Unchanged"} #{path}" if @verbose
+        @logger.info "  #{wrote ? 'Wrote' : 'Unchanged'} #{path}" if @verbose
       end
 
       def write_file(path, new_content)
@@ -100,9 +103,7 @@ module Chiridion
         true
       end
 
-      def content_changed?(old, new)
-        normalize(old) != normalize(new)
-      end
+      def content_changed?(old, new) = normalize(old) != normalize(new)
 
       def normalize(content)
         content
@@ -112,8 +113,8 @@ module Chiridion
       end
 
       def output_path(class_path)
-        stripped = @namespace_strip ? class_path.sub(/^#{Regexp.escape(@namespace_strip)}/, "") : class_path
-        parts = stripped.split("::")
+        stripped    = @namespace_strip ? class_path.sub(/^#{Regexp.escape(@namespace_strip)}/, "") : class_path
+        parts       = stripped.split("::")
         kebab_parts = parts.map { |p| to_kebab_case(p) }
         File.join(@output, *kebab_parts[0..-2], "#{kebab_parts.last}.md")
       end

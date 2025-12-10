@@ -17,7 +17,7 @@ module Chiridion
       # @param branch [String] Git branch for links
       # @param root [String] Project root for detecting git remote
       def initialize(repo: nil, branch: "main", root: Dir.pwd)
-        @branch = branch
+        @branch   = branch
         @base_url = repo ? "https://github.com/#{repo}" : extract_github_base_url(root)
       end
 

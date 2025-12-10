@@ -22,7 +22,7 @@ module Chiridion
     class RbsTypeAliasLoader
       def initialize(verbose, logger, rbs_dir: nil)
         @verbose = verbose
-        @logger = logger
+        @logger  = logger
         @rbs_dir = rbs_dir
       end
 
@@ -56,8 +56,8 @@ module Chiridion
         content = File.read(file)
         return unless content.include?("type ")
 
-        expanded_file = File.expand_path(file)
-        lines = content.lines
+        expanded_file   = File.expand_path(file)
+        lines           = content.lines
         namespace_stack = []
         pending_comment = nil
 
@@ -81,7 +81,7 @@ module Chiridion
           # Collect comments (description for next type)
           if stripped.start_with?("#")
             # Accumulate multi-line comments
-            comment_text = stripped.sub(/^#\s*/, "")
+            comment_text    = stripped.sub(/^#\s*/, "")
             pending_comment = pending_comment ? "#{pending_comment} #{comment_text}" : comment_text
             next
           end
@@ -92,16 +92,16 @@ module Chiridion
           # Parse type definition
           if stripped =~ /^type\s+(\w+)\s*=\s*(.+)$/
             type_name = Regexp.last_match(1)
-            type_def = Regexp.last_match(2)
+            type_def  = Regexp.last_match(2)
 
-            namespace = namespace_stack.join("::")
+            namespace                 = namespace_stack.join("::")
             type_aliases[namespace] ||= []
             type_aliases[namespace] << {
-              name: type_name,
-              definition: type_def,
+              name:        type_name,
+              definition:  type_def,
               description: pending_comment,
-              file: expanded_file,
-              line: line_num
+              file:        expanded_file,
+              line:        line_num
             }
           end
 

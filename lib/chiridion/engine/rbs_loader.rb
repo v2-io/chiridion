@@ -9,8 +9,8 @@ module Chiridion
     class RbsLoader
       def initialize(rbs_path, verbose, logger)
         @rbs_path = rbs_path
-        @verbose = verbose
-        @logger = logger
+        @verbose  = verbose
+        @logger   = logger
       end
 
       # Load all RBS files and return a hash of class -> method -> signature.
@@ -18,7 +18,7 @@ module Chiridion
       # @return [Hash{String => Hash{String => Hash}}] Nested hash of signatures
       def load
         signatures = {}
-        rbs_files = Dir.glob("#{@rbs_path}/**/*.rbs")
+        rbs_files  = Dir.glob("#{@rbs_path}/**/*.rbs")
 
         return signatures if rbs_files.empty?
 
@@ -30,7 +30,7 @@ module Chiridion
       private
 
       def parse_file(file, signatures)
-        content = File.read(file)
+        content       = File.read(file)
         current_class = nil
 
         content.each_line do |line|
@@ -45,7 +45,7 @@ module Chiridion
       def extract_class_name(line, signatures, current_class)
         return current_class unless line =~ /^\s*(?:class|module)\s+([\w:]+)/
 
-        class_name = Regexp.last_match(1)
+        class_name               = Regexp.last_match(1)
         signatures[class_name] ||= {}
         class_name
       end
@@ -53,19 +53,19 @@ module Chiridion
       def extract_method_signature(line, signatures, current_class)
         return unless line =~ /^\s*def\s+(?:self\.)?(\w+[?!]?):\s*(.+)$/
 
-        method_name = Regexp.last_match(1)
-        full_sig = Regexp.last_match(2).strip
+        method_name                            = Regexp.last_match(1)
+        full_sig                               = Regexp.last_match(2).strip
         signatures[current_class][method_name] = parse_signature(full_sig)
       end
 
       def extract_attr_signature(line, signatures, current_class)
         return unless line =~ /^\s*attr_(?:reader|accessor)\s+(\w+):\s*(.+)$/
 
-        attr_name = Regexp.last_match(1)
-        attr_type = Regexp.last_match(2).strip
+        attr_name                            = Regexp.last_match(1)
+        attr_type                            = Regexp.last_match(2).strip
         signatures[current_class][attr_name] = {
-          full: "() -> #{attr_type}",
-          params: {},
+          full:    "() -> #{attr_type}",
+          params:  {},
           returns: attr_type
         }
       end
@@ -78,7 +78,7 @@ module Chiridion
         result = { full: sig, params: {}, returns: nil }
 
         if sig =~ /\A\(([^)]*)\)\s*->\s*(.+)\z/
-          params_str = Regexp.last_match(1)
+          params_str       = Regexp.last_match(1)
           result[:returns] = Regexp.last_match(2).strip
           parse_params(params_str, result[:params])
         elsif sig =~ /\A\(\)\s*->\s*(.+)\z/
@@ -105,22 +105,22 @@ module Chiridion
       def parse_single_param(param, result)
         # Keyword arg: `?name: Type?` or `name: Type`
         if param =~ /\A\??(\w+):\s*(.+)\z/
-          name = Regexp.last_match(1)
-          type = Regexp.last_match(2).strip.delete_suffix("?")
+          name         = Regexp.last_match(1)
+          type         = Regexp.last_match(2).strip.delete_suffix("?")
           result[name] = type
         # Positional: `?Type name` or `Type name`
         elsif param =~ /\A\??(.+?)\s+(\w+)\z/
-          type = Regexp.last_match(1).strip
-          name = Regexp.last_match(2)
+          type         = Regexp.last_match(1).strip
+          name         = Regexp.last_match(2)
           result[name] = type
         end
       end
 
       # Split string by commas while respecting nested brackets [], {}, ().
       def split_respecting_brackets(str)
-        result = []
+        result  = []
         current = +""  # Mutable string
-        depth = 0
+        depth   = 0
 
         str.each_char do |c|
           case c

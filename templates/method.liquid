@@ -12,6 +12,12 @@
 {{ return_line }}
 {% endif %}
 {%- endif -%}
+{%- if inline_source %}
+
+```ruby
+{{ inline_source }}
+```
+{%- endif -%}
 {%- for ex in examples %}
 
 **{% if ex.name %}Example: {{ ex.name }}{% else %}Example{% endif %}:**

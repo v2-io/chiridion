@@ -9,12 +9,10 @@ module Chiridion
     # reflects the actual type contracts defined in sig/*.rbs.
     class TypeMerger
       # Known type equivalences between YARD conventions and RBS.
-      BOOLEAN_TYPES = %w[bool TrueClass FalseClass].freeze
+      BOOLEAN_TYPES    = %w[bool TrueClass FalseClass].freeze
       GENERIC_PREFIXES = { "Hash" => "Hash[", "Array" => "Array[" }.freeze
 
-      def initialize(logger = nil)
-        @logger = logger
-      end
+      def initialize(logger = nil) = @logger = logger
 
       # Merge YARD params with RBS types - RBS is authoritative.
       #
@@ -54,16 +52,14 @@ module Chiridion
 
       def merge_single_param(param, rbs_params, class_path, method_name)
         param_name = clean_param_name(param[:name])
-        rbs_type = rbs_params[param_name]
+        rbs_type   = rbs_params[param_name]
         return param unless rbs_type
 
         check_param_mismatch(param, rbs_type, class_path, method_name, param_name)
         param.merge(types: [rbs_type])
       end
 
-      def clean_param_name(name)
-        name.to_s.delete_prefix("*").delete_prefix("**").delete_prefix("&").delete_suffix(":")
-      end
+      def clean_param_name(name) = name.to_s.delete_prefix("*").delete_prefix("**").delete_prefix("&").delete_suffix(":")
 
       def check_param_mismatch(param, rbs_type, class_path, method_name, param_name)
         yard_type = param[:types]&.join(", ")
@@ -84,14 +80,12 @@ module Chiridion
         return true if yard_type.nil? || rbs_type.nil?
 
         yard_norm = normalize_type(yard_type)
-        rbs_norm = normalize_type(rbs_type)
+        rbs_norm  = normalize_type(rbs_type)
 
         exact_or_prefix_match?(yard_norm, rbs_norm) || equivalent_types?(yard_norm, rbs_norm)
       end
 
-      def exact_or_prefix_match?(yard_norm, rbs_norm)
-        yard_norm == rbs_norm || rbs_norm.start_with?(yard_norm)
-      end
+      def exact_or_prefix_match?(yard_norm, rbs_norm) = yard_norm == rbs_norm || rbs_norm.start_with?(yard_norm)
 
       def equivalent_types?(yard_norm, rbs_norm)
         return true if yard_norm == "Boolean" && BOOLEAN_TYPES.include?(rbs_norm)
@@ -100,9 +94,7 @@ module Chiridion
         prefix && rbs_norm.start_with?(prefix)
       end
 
-      def normalize_type(type)
-        type.to_s.gsub(/\s+/, "").tr("<", "[").tr(">", "]")
-      end
+      def normalize_type(type) = type.to_s.gsub(/\s+/, "").tr("<", "[").tr(">", "]")
 
       def warn_mismatch(class_path, method_name, param_name, yard_type, rbs_type)
         return unless @logger

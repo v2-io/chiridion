@@ -16,20 +16,22 @@ module Chiridion
         root: Dir.pwd,
         github_repo: nil,
         github_branch: "main",
-        project_title: "API Documentation"
+        project_title: "API Documentation",
+        inline_source_threshold: 10
       )
-        @output = output
+        @output          = output
         @namespace_strip = namespace_strip
-        @include_specs = include_specs
-        @verbose = verbose
-        @logger = logger
-        @renderer = Renderer.new(
-          namespace_strip: namespace_strip,
-          include_specs: include_specs,
-          root: root,
-          github_repo: github_repo,
-          github_branch: github_branch,
-          project_title: project_title
+        @include_specs   = include_specs
+        @verbose         = verbose
+        @logger          = logger
+        @renderer        = Renderer.new(
+          namespace_strip:         namespace_strip,
+          include_specs:           include_specs,
+          root:                    root,
+          github_repo:             github_repo,
+          github_branch:           github_branch,
+          project_title:           project_title,
+          inline_source_threshold: inline_source_threshold
         )
       end
 
@@ -40,8 +42,8 @@ module Chiridion
       def check(structure)
         @renderer.register_classes(structure)
 
-        drifted = []
-        missing = []
+        drifted  = []
+        missing  = []
         orphaned = find_orphaned_files(structure)
 
         check_index(structure, drifted, missing)
@@ -53,7 +55,7 @@ module Chiridion
       private
 
       def check_index(structure, drifted, missing)
-        path = File.join(@output, "index.md")
+        path     = File.join(@output, "index.md")
         expected = @renderer.render_index(structure)
         check_file(path, expected, drifted, missing)
       end
@@ -62,7 +64,7 @@ module Chiridion
         objects.each do |obj|
           next unless obj[:needs_regeneration]
 
-          path = output_path(obj[:path])
+          path     = output_path(obj[:path])
           expected = obj[:type] == :class ? @renderer.render_class(obj) : @renderer.render_module(obj)
           check_file(path, expected, drifted, missing)
         end
@@ -91,9 +93,7 @@ module Chiridion
         actual_files.reject { |f| expected_files.include?(f) }
       end
 
-      def content_changed?(old, new)
-        normalize(old) != normalize(new)
-      end
+      def content_changed?(old, new) = normalize(old) != normalize(new)
 
       def normalize(content)
         content
@@ -129,8 +129,8 @@ module Chiridion
       end
 
       def output_path(class_path)
-        stripped = @namespace_strip ? class_path.sub(/^#{Regexp.escape(@namespace_strip)}/, "") : class_path
-        parts = stripped.split("::")
+        stripped    = @namespace_strip ? class_path.sub(/^#{Regexp.escape(@namespace_strip)}/, "") : class_path
+        parts       = stripped.split("::")
         kebab_parts = parts.map { |p| to_kebab_case(p) }
         File.join(@output, *kebab_parts[0..-2], "#{kebab_parts.last}.md")
       end

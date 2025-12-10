@@ -61,6 +61,7 @@ module Chiridion
     # @param github_branch [String] Git branch for source links.
     # @param project_title [String] Title for the documentation index.
     # @param index_description [String, nil] Custom description for the index page.
+    # @param inline_source_threshold [Integer, nil] Max body lines for inline source display.
     def initialize(
       paths:,
       output:,
@@ -71,26 +72,28 @@ module Chiridion
       logger: nil,
       root: Dir.pwd,
       rbs_path: "sig",
-      spec_path: "spec",
+      spec_path: "test",
       github_repo: nil,
       github_branch: "main",
       project_title: "API Documentation",
-      index_description: nil
+      index_description: nil,
+      inline_source_threshold: 10
     )
-      @paths = Array(paths)
-      @output = output
-      @namespace_filter = namespace_filter
-      @namespace_strip = namespace_strip || namespace_filter
-      @include_specs = include_specs
-      @verbose = verbose
-      @logger = logger || DefaultLogger.new
-      @root = root
-      @rbs_path = rbs_path
-      @spec_path = spec_path
-      @github_repo = github_repo
-      @github_branch = github_branch
-      @project_title = project_title
-      @index_description = index_description
+      @paths                   = Array(paths)
+      @output                  = output
+      @namespace_filter        = namespace_filter
+      @namespace_strip         = namespace_strip || namespace_filter
+      @include_specs           = include_specs
+      @verbose                 = verbose
+      @logger                  = logger || DefaultLogger.new
+      @root                    = root
+      @rbs_path                = rbs_path
+      @spec_path               = spec_path
+      @github_repo             = github_repo
+      @github_branch           = github_branch
+      @project_title           = project_title
+      @index_description       = index_description
+      @inline_source_threshold = inline_source_threshold
     end
 
     # Generate documentation from source and write to output directory.
@@ -106,6 +109,7 @@ module Chiridion
     # @return [void]
     def refresh
       require "yard"
+      register_rbs_tag
 
       @logger.info "Parsing Ruby files in #{paths_description}..."
 
@@ -124,6 +128,7 @@ module Chiridion
     # @raise [SystemExit] Exits with code 1 if drift is detected
     def check
       require "yard"
+      register_rbs_tag
 
       @logger.info "Checking documentation drift for #{paths_description}..."
 
@@ -134,13 +139,18 @@ module Chiridion
 
     private
 
-    def paths_description
-      @paths.size == 1 ? @paths.first : "#{@paths.size} paths"
+    def paths_description = @paths.size == 1 ? @paths.first : "#{@paths.size} paths"
+
+    # Register @rbs as a known YARD tag to suppress "Unknown tag" warnings
+    def register_rbs_tag
+      return if YARD::Tags::Library.labels.key?(:rbs)
+
+      YARD::Tags::Library.define_tag("RBS type annotation", :rbs, :with_types_and_name)
     end
 
     def load_sources
       # Suppress YARD's verbose proxy warnings unless in verbose mode
-      original_log_level = YARD::Logger.instance.level
+      original_log_level          = YARD::Logger.instance.level
       YARD::Logger.instance.level = @verbose ? Logger::WARN : Logger::ERROR
 
       @source_files = @paths.flat_map { |p| resolve_ruby_files(p) }.map { |f| File.expand_path(f) }
@@ -157,19 +167,17 @@ module Chiridion
 
       # Load RBS types: inline annotations take precedence over sig/ files
       inline_types, @rbs_file_namespaces = InlineRbsLoader.new(@verbose, @logger).load(@source_files)
-      sig_types = RbsLoader.new(@rbs_path, @verbose, @logger).load
-      @rbs_types = merge_rbs_types(sig_types, inline_types)
+      sig_types                          = RbsLoader.new(@rbs_path, @verbose, @logger).load
+      @rbs_types                         = merge_rbs_types(sig_types, inline_types)
 
       # Load type aliases from generated RBS files (sig/generated/ is standard for RBS::Inline)
       rbs_generated_dir = find_rbs_generated_dir
-      @type_aliases = RbsTypeAliasLoader.new(@verbose, @logger, rbs_dir: rbs_generated_dir).load
+      @type_aliases     = RbsTypeAliasLoader.new(@verbose, @logger, rbs_dir: rbs_generated_dir).load
 
       @spec_examples = @include_specs ? SpecExampleLoader.new(@spec_path, @verbose, @logger).load : {}
     end
 
-    def partial_refresh?
-      @paths.all? { |p| File.file?(p) }
-    end
+    def partial_refresh? = @paths.all? { |p| File.file?(p) }
 
     def load_or_create_registry
       yardoc_path = File.join(@root, ".yardoc")
@@ -207,13 +215,13 @@ module Chiridion
 
     def extract_documentation(registry)
       source_filter = partial_refresh? ? @source_files : nil
-      structure = Extractor.new(
+      structure     = Extractor.new(
         @rbs_types,
         @spec_examples,
         @namespace_filter,
         @logger,
         rbs_file_namespaces: @rbs_file_namespaces,
-        type_aliases: @type_aliases
+        type_aliases:        @type_aliases
       ).extract(registry, source_filter: source_filter)
 
       # Add type aliases to the structure (for standalone reference page)
@@ -228,11 +236,12 @@ module Chiridion
         @include_specs,
         @verbose,
         @logger,
-        root: @root,
-        github_repo: @github_repo,
-        github_branch: @github_branch,
-        project_title: @project_title,
-        index_description: @index_description
+        root:                    @root,
+        github_repo:             @github_repo,
+        github_branch:           @github_branch,
+        project_title:           @project_title,
+        index_description:       @index_description,
+        inline_source_threshold: @inline_source_threshold
       ).write(structure)
     end
 
@@ -243,10 +252,11 @@ module Chiridion
         @include_specs,
         @verbose,
         @logger,
-        root: @root,
-        github_repo: @github_repo,
-        github_branch: @github_branch,
-        project_title: @project_title
+        root:                    @root,
+        github_repo:             @github_repo,
+        github_branch:           @github_branch,
+        project_title:           @project_title,
+        inline_source_threshold: @inline_source_threshold
       ).check(structure)
     end
 
@@ -268,9 +278,9 @@ module Chiridion
 
   # Simple default logger that prints to stderr.
   class DefaultLogger
-    def info(msg) = $stderr.puts(msg)
-    def warn(msg) = $stderr.puts("WARNING: #{msg}")
-    def error(msg) = $stderr.puts("ERROR: #{msg}")
+    def info(msg) = Kernel.warn(msg)
+    def warn(msg) = Kernel.warn("WARNING: #{msg}")
+    def error(msg) = Kernel.warn("ERROR: #{msg}")
   end
 end
 

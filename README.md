@@ -156,6 +156,23 @@ tool "docs" do
 end
 ```
 
+## Development
+
+Chiridion uses itself to generate its own API documentation (dogfooding). The generated docs live in `docs/sys/`.
+
+```bash
+# Regenerate Chiridion's own documentation
+toys docs refresh
+
+# Verbose output
+toys docs refresh -v
+
+# Check for drift (CI mode - exits 1 if docs are out of sync)
+toys docs check
+```
+
+This serves as both a live integration test and a reference for the output format.
+
 ## Name Origin
 
 "Chiridion" is the Greek word for a small handbook or manual — appropriate for a tool that generates compact, structured documentation for AI assistants to reference.

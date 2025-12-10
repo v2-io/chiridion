@@ -17,7 +17,7 @@ module Chiridion
 
       def initialize(namespace_strip: nil)
         @namespace_strip = namespace_strip
-        @known_classes = {}
+        @known_classes   = {}
       end
 
       # Register known classes from the documentation structure.
@@ -25,10 +25,10 @@ module Chiridion
       # @param structure [Hash] Documentation structure from Extractor
       def register_classes(structure)
         (structure[:classes] + structure[:modules]).each do |obj|
-          path = obj[:path]
-          @known_classes[path] = doc_path(path)
+          path                         = obj[:path]
+          @known_classes[path]         = doc_path(path)
           # Also register short name for relative lookups
-          short_name = path.split("::").last
+          short_name                   = path.split("::").last
           @known_classes[short_name] ||= doc_path(path)
         end
       end
@@ -40,7 +40,7 @@ module Chiridion
       # @return [String] Wikilink like `[[path|Name]]` or original if not found
       def link(class_path, context: nil)
         display_name = class_path.split("::").last
-        resolved = resolve(class_path, context: context)
+        resolved     = resolve(class_path, context: context)
         return display_name unless resolved
 
         "[[#{resolved}|#{display_name}]]"
@@ -79,17 +79,13 @@ module Chiridion
       #
       # @param class_name [String] Class name to check
       # @return [Boolean]
-      def known?(class_name)
-        @known_classes.key?(class_name)
-      end
+      def known?(class_name) = @known_classes.key?(class_name)
 
       SKIP_TYPES = %w[Array Hash String Integer Float Symbol Boolean Object TrueClass FalseClass NilClass Proc
                       Class Module Numeric Enumerable Comparable void untyped nil self].freeze
       private_constant :SKIP_TYPES
 
-      def skip_type?(class_ref)
-        SKIP_TYPES.include?(class_ref)
-      end
+      def skip_type?(class_ref) = SKIP_TYPES.include?(class_ref)
 
       private
 
@@ -99,9 +95,9 @@ module Chiridion
         last_end = 0
 
         type_str.scan(/\b([A-Z]\w*(?:::[A-Z]\w*)*)\b/) do
-          class_ref = Regexp.last_match(1)
+          class_ref   = Regexp.last_match(1)
           match_start = Regexp.last_match.begin(0)
-          match_end = Regexp.last_match.end(0)
+          match_end   = Regexp.last_match.end(0)
 
           segments << [:text, type_str[last_end...match_start]] if match_start > last_end
           segments << segment_for_class(class_ref, context: context)
@@ -131,17 +127,13 @@ module Chiridion
         format_mixed_segments(segments)
       end
 
-      def format_pure_text(segments)
-        "`#{segments.map(&:last).join}`"
-      end
+      def format_pure_text(segments) = "`#{segments.map(&:last).join}`"
 
-      def pure_link?(segments)
-        segments.size == 1 && segments.first.first == :link
-      end
+      def pure_link?(segments) = segments.size == 1 && segments.first.first == :link
 
       # Format mixed content: wrap text in backticks, leave links bare.
       def format_mixed_segments(segments)
-        result = []
+        result      = []
         text_buffer = +""
 
         segments.each do |type, content|
@@ -175,7 +167,7 @@ module Chiridion
           return @known_classes[relative_path] if @known_classes[relative_path]
 
           # Try parent namespace
-          parent = context.split("::")[0..-2].join("::")
+          parent       = context.split("::")[0..-2].join("::")
           sibling_path = "#{parent}::#{class_ref}"
           return @known_classes[sibling_path] if @known_classes[sibling_path]
         end
@@ -185,8 +177,8 @@ module Chiridion
 
       # Convert class path to documentation file path.
       def doc_path(class_path)
-        stripped = @namespace_strip ? class_path.sub(/^#{Regexp.escape(@namespace_strip)}/, "") : class_path
-        parts = stripped.split("::")
+        stripped    = @namespace_strip ? class_path.sub(/^#{Regexp.escape(@namespace_strip)}/, "") : class_path
+        parts       = stripped.split("::")
         kebab_parts = parts.map { |p| to_kebab_case(p) }
         kebab_parts.join("/")
       end

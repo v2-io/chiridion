@@ -28,20 +28,22 @@ module Chiridion
         github_branch: "main",
         project_title: "API Documentation",
         index_description: nil,
-        templates_path: nil
+        templates_path: nil,
+        inline_source_threshold: 10
       )
-        @namespace_strip = namespace_strip
-        @include_specs = include_specs
-        @root = root
-        @index_description = index_description || "Auto-generated from source code."
-        @class_linker = ClassLinker.new(namespace_strip: namespace_strip)
-        @github_linker = GithubLinker.new(repo: github_repo, branch: github_branch, root: root)
-        @frontmatter_builder = FrontmatterBuilder.new(
+        @namespace_strip         = namespace_strip
+        @include_specs           = include_specs
+        @root                    = root
+        @index_description       = index_description || "Auto-generated from source code."
+        @inline_source_threshold = inline_source_threshold
+        @class_linker            = ClassLinker.new(namespace_strip: namespace_strip)
+        @github_linker           = GithubLinker.new(repo: github_repo, branch: github_branch, root: root)
+        @frontmatter_builder     = FrontmatterBuilder.new(
           @class_linker,
           namespace_strip: namespace_strip,
-          project_title: project_title
+          project_title:   project_title
         )
-        @template_renderer = TemplateRenderer.new(templates_path: templates_path)
+        @template_renderer       = TemplateRenderer.new(templates_path: templates_path)
       end
 
       # Register known classes for cross-reference linking and inheritance.
@@ -68,10 +70,10 @@ module Chiridion
         end
 
         body = @template_renderer.render_index(
-          title: frontmatter[:title],
+          title:       frontmatter[:title],
           description: @index_description,
-          classes: classes,
-          modules: modules
+          classes:     classes,
+          modules:     modules
         )
 
         "#{render_frontmatter(frontmatter)}\n\n#{body}\n"
@@ -81,17 +83,13 @@ module Chiridion
       #
       # @param klass [Hash] Class data from Extractor
       # @return [String] Markdown documentation
-      def render_class(klass)
-        render_document(klass, include_mixins: true)
-      end
+      def render_class(klass) = render_document(klass, include_mixins: true)
 
       # Render module documentation.
       #
       # @param mod [Hash] Module data from Extractor
       # @return [String] Markdown documentation
-      def render_module(mod)
-        render_document(mod, include_mixins: false)
-      end
+      def render_module(mod) = render_document(mod, include_mixins: false)
 
       # Render type aliases reference page.
       #
@@ -101,21 +99,21 @@ module Chiridion
         return nil if type_aliases.nil? || type_aliases.empty?
 
         frontmatter = {
-          generated: Time.now.utc.iso8601,
-          title: "Type Aliases Reference",
-          type: "reference",
+          generated:   Time.now.utc.iso8601,
+          title:       "Type Aliases Reference",
+          type:        "reference",
           description: "RBS type aliases defined across the codebase",
-          tags: ["types", "rbs", "reference"]
+          tags:        %w[types rbs reference]
         }
 
         # Convert to array format for template
         namespaces = type_aliases.map do |namespace, types|
           {
-            name: namespace.empty? ? "(root)" : namespace,
+            name:  namespace.empty? ? "(root)" : namespace,
             types: types.map do |t|
               {
-                name: t[:name],
-                definition: t[:definition],
+                name:        t[:name],
+                definition:  t[:definition],
                 description: t[:description]
               }
             end
@@ -123,9 +121,9 @@ module Chiridion
         end.sort_by { |ns| ns[:name] }
 
         body = @template_renderer.render_type_aliases(
-          title: "Type Aliases Reference",
+          title:       "Type Aliases Reference",
           description: "RBS type aliases defined across the codebase. These types provide compile-time documentation and can be referenced in `@rbs` annotations.",
-          namespaces: namespaces
+          namespaces:  namespaces
         )
 
         "#{render_frontmatter(frontmatter)}\n\n#{body}\n"
@@ -135,28 +133,28 @@ module Chiridion
 
       def render_document(obj, include_mixins:)
         frontmatter = build_document_frontmatter(obj)
-        docstring = @class_linker.linkify_docstring(obj[:docstring], context: obj[:path])
+        docstring   = @class_linker.linkify_docstring(obj[:docstring], context: obj[:path])
 
         body = @template_renderer.render_document(
-          title: obj[:path],
-          docstring: docstring,
-          mixins: include_mixins ? render_mixins(obj) : nil,
-          examples: obj[:examples] || [],
-          spec_examples: render_spec_examples(obj),
-          see_also: render_see_also(obj[:see_also], obj[:path]),
+          title:             obj[:path],
+          docstring:         docstring,
+          mixins:            include_mixins ? render_mixins(obj) : nil,
+          examples:          obj[:examples] || [],
+          spec_examples:     render_spec_examples(obj),
+          see_also:          render_see_also(obj[:see_also], obj[:path]),
           constants_section: render_constants(obj[:constants]),
-          types_section: render_types_section(obj[:referenced_types]),
-          methods_section: render_methods(obj[:methods], obj[:path])
+          types_section:     render_types_section(obj[:referenced_types]),
+          methods_section:   render_methods(obj[:methods], obj[:path])
         )
 
         "#{render_frontmatter(frontmatter)}\n\n#{body}\n"
       end
 
       def build_document_frontmatter(obj)
-        frontmatter = @frontmatter_builder.build(obj)
+        frontmatter              = @frontmatter_builder.build(obj)
         # Convert absolute paths to relative
-        frontmatter[:source] = relative_path(frontmatter[:source])
-        frontmatter[:source] = format_source_with_lines(frontmatter[:source], obj[:line], obj[:end_line])
+        frontmatter[:source]     = relative_path(frontmatter[:source])
+        frontmatter[:source]     = format_source_with_lines(frontmatter[:source], obj[:line], obj[:end_line])
         frontmatter[:source_url] = @github_linker.url(
           frontmatter[:source].split(":").first,
           obj[:line],
@@ -171,7 +169,7 @@ module Chiridion
       # Uses block style for arrays with wikilinks (related, inherited_by).
       # Omits nil values.
       def render_frontmatter(fm)
-        block_style_fields = %i[related inherited_by]
+        block_style_fields = [:related, :inherited_by]
 
         lines = ["---"]
         fm.each do |key, value|
@@ -199,8 +197,8 @@ module Chiridion
       end
 
       def link(class_path)
-        stripped = @namespace_strip ? class_path.sub(/^#{Regexp.escape(@namespace_strip)}/, "") : class_path
-        parts = stripped.split("::")
+        stripped    = @namespace_strip ? class_path.sub(/^#{Regexp.escape(@namespace_strip)}/, "") : class_path
+        parts       = stripped.split("::")
         kebab_parts = parts.map { |p| to_kebab_case(p) }
         File.join(*kebab_parts[0..-2], kebab_parts.last)
       end
@@ -242,9 +240,7 @@ module Chiridion
         parts.join("\n\n")
       end
 
-      def clean(code, class_path)
-        code.gsub("described_class", class_path.split("::").last).strip
-      end
+      def clean(code, class_path) = code.gsub("described_class", class_path.split("::").last).strip
 
       def format_source_with_lines(path, start_line, end_line)
         return path unless start_line
@@ -259,27 +255,27 @@ module Chiridion
       def render_constants(constants)
         return "" if constants.nil? || constants.empty?
 
-        simple, complex = partition_constants(constants)
+        _, complex = partition_constants(constants)
 
         constant_data = constants.map do |c|
           {
-            name: c[:name],
-            value: format_constant_value(c[:value], complex.include?(c)),
-            docstring: c[:docstring].to_s,
+            name:       c[:name],
+            value:      format_constant_value(c[:value], complex.include?(c)),
+            docstring:  c[:docstring].to_s,
             is_complex: complex.include?(c)
           }
         end
 
         complex_data = complex.map do |c|
           {
-            name: c[:name],
-            value: strip_freeze(c[:value]),
+            name:      c[:name],
+            value:     strip_freeze(c[:value]),
             docstring: c[:docstring].to_s
           }
         end
 
         @template_renderer.render_constants(
-          constants: constant_data,
+          constants:         constant_data,
           complex_constants: complex_data
         )
       end
@@ -289,19 +285,17 @@ module Chiridion
 
         types_data = referenced_types.map do |t|
           {
-            name: t[:name],
-            definition: t[:definition],
+            name:        t[:name],
+            definition:  t[:definition],
             description: t[:description],
-            namespace: t[:namespace]
+            namespace:   t[:namespace]
           }
         end
 
         @template_renderer.render_types(types: types_data)
       end
 
-      def partition_constants(constants)
-        constants.partition { |c| c[:value].to_s.count("\n") <= 1 }
-      end
+      def partition_constants(constants) = constants.partition { |c| c[:value].to_s.count("\n") <= 1 }
 
       def format_constant_value(value, is_complex)
         return "" if is_complex
@@ -310,9 +304,7 @@ module Chiridion
         strip_freeze(value.to_s).gsub("|", "\\|").gsub("\n", "<br />")
       end
 
-      def strip_freeze(str)
-        str.to_s.delete_suffix(".freeze")
-      end
+      def strip_freeze(str) = str.to_s.delete_suffix(".freeze")
 
       def render_methods(methods, context)
         return "" if methods.nil? || methods.empty?
@@ -323,18 +315,33 @@ module Chiridion
 
       def render_method(meth, context)
         display_name = method_display_name(meth)
-        docstring = useful_docstring?(meth[:docstring]) ? @class_linker.linkify_docstring(meth[:docstring], context: context) : nil
+        docstring    = if useful_docstring?(meth[:docstring])
+                         @class_linker.linkify_docstring(meth[:docstring],
+                                                         context: context)
+                       end
 
         @template_renderer.render_method(
-          display_name: display_name,
-          has_params: meth[:params]&.any?,
-          docstring: docstring,
-          params: render_params_with_types(meth[:params]),
-          return_line: render_return_line(meth),
-          examples: meth[:examples] || [],
-          behaviors: @include_specs ? (meth[:spec_behaviors] || []).first(8) : [],
-          spec_examples: @include_specs ? (meth[:spec_examples] || []).first(3) : []
+          display_name:  display_name,
+          has_params:    meth[:params]&.any?,
+          docstring:     docstring,
+          params:        render_params_with_types(meth[:params]),
+          return_line:   render_return_line(meth),
+          examples:      meth[:examples] || [],
+          behaviors:     @include_specs ? (meth[:spec_behaviors] || []).first(8) : [],
+          spec_examples: @include_specs ? (meth[:spec_examples] || []).first(3) : [],
+          inline_source: inline_source_for(meth)
         )
+      end
+
+      # Returns method source if it's short enough to display inline.
+      def inline_source_for(meth)
+        return nil unless @inline_source_threshold&.positive?
+        return nil unless meth[:source]
+
+        body_lines = meth[:source_body_lines]
+        return nil if body_lines.nil? || body_lines > @inline_source_threshold
+
+        meth[:source]
       end
 
       def method_display_name(meth)
@@ -359,20 +366,18 @@ module Chiridion
       end
 
       def format_param(param, max_name_len)
-        name = clean_param_name(param[:name])
-        prefix = extract_param_prefix(param[:name])
-        type = normalize_type(param[:types]&.first || "untyped")
+        name    = clean_param_name(param[:name])
+        prefix  = extract_param_prefix(param[:name])
+        type    = normalize_type(param[:types]&.first || "untyped")
         default = param[:default]
-        desc = param[:text].to_s
-        padded = name.ljust(max_name_len)
+        desc    = param[:text].to_s
+        padded  = name.ljust(max_name_len)
 
         inner = default ? "#{prefix}#{padded} : #{type} = #{default}" : "#{prefix}#{padded} : #{type}"
         desc.empty? ? "⟨#{inner}⟩" : "⟨#{inner}⟩ → #{desc}"
       end
 
-      def clean_param_name(name)
-        name.to_s.delete_prefix("*").delete_prefix("*").delete_prefix("&").chomp(":")
-      end
+      def clean_param_name(name) = name.to_s.delete_prefix("*").delete_prefix("*").delete_prefix("&").chomp(":")
 
       def extract_param_prefix(name)
         str = name.to_s
@@ -383,9 +388,7 @@ module Chiridion
         ""
       end
 
-      def normalize_type(type)
-        type.tr("<", "[").tr(">", "]")
-      end
+      def normalize_type(type) = type.tr("<", "[").tr(">", "]")
 
       def render_return_line(meth)
         returns = meth[:returns]

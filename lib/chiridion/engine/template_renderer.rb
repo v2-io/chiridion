@@ -45,8 +45,8 @@ module Chiridion
 
       def initialize(templates_path: nil)
         @templates_path = templates_path || default_templates_path
-        @templates = {}
-        @environment = Liquid::Environment.build do |env|
+        @templates      = {}
+        @environment    = Liquid::Environment.build do |env|
           env.register_filter(Filters)
         end
       end
@@ -60,11 +60,11 @@ module Chiridion
       # @return [String] Rendered markdown
       def render_index(title:, description:, classes:, modules:)
         render("index", {
-          "title" => title,
-          "description" => description,
-          "classes" => stringify_keys(classes),
-          "modules" => stringify_keys(modules)
-        })
+                 "title"       => title,
+                 "description" => description,
+                 "classes"     => stringify_keys(classes),
+                 "modules"     => stringify_keys(modules)
+               })
       end
 
       # Render a class or module document.
@@ -91,16 +91,16 @@ module Chiridion
         methods_section: ""
       )
         render("document", {
-          "title" => title,
-          "docstring" => docstring,
-          "mixins" => mixins,
-          "examples" => stringify_keys(examples),
-          "spec_examples" => spec_examples,
-          "see_also" => see_also,
-          "constants_section" => constants_section,
-          "types_section" => types_section,
-          "methods_section" => methods_section
-        })
+                 "title"             => title,
+                 "docstring"         => docstring,
+                 "mixins"            => mixins,
+                 "examples"          => stringify_keys(examples),
+                 "spec_examples"     => spec_examples,
+                 "see_also"          => see_also,
+                 "constants_section" => constants_section,
+                 "types_section"     => types_section,
+                 "methods_section"   => methods_section
+               })
       end
 
       # Render a single method.
@@ -113,6 +113,7 @@ module Chiridion
       # @param examples [Array<Hash>] YARD examples
       # @param behaviors [Array<String>] Spec behavior descriptions
       # @param spec_examples [Array<Hash>] Spec code examples
+      # @param inline_source [String, nil] Method source code to display inline
       # @return [String] Rendered markdown
       def render_method(
         display_name:,
@@ -122,29 +123,29 @@ module Chiridion
         return_line: nil,
         examples: [],
         behaviors: [],
-        spec_examples: []
+        spec_examples: [],
+        inline_source: nil
       )
         render("method", {
-          "display_name" => display_name,
-          "has_params" => has_params,
-          "docstring" => docstring,
-          "params" => params,
-          "return_line" => return_line,
-          "examples" => stringify_keys(examples),
-          "behaviors" => behaviors,
-          "spec_examples" => stringify_keys(spec_examples)
-        })
+                 "display_name"  => display_name,
+                 "has_params"    => has_params,
+                 "docstring"     => docstring,
+                 "params"        => params,
+                 "return_line"   => return_line,
+                 "examples"      => stringify_keys(examples),
+                 "behaviors"     => behaviors,
+                 "spec_examples" => stringify_keys(spec_examples),
+                 "inline_source" => inline_source
+               })
       end
 
       # Render the methods section with separators.
       #
       # @param methods [Array<String>] Pre-rendered method strings
       # @return [String] Rendered markdown
-      def render_methods(methods:)
-        render("methods", {
-          "methods" => methods
-        })
-      end
+      def render_methods(methods:) = render("methods", {
+                                              "methods" => methods
+                                            })
 
       # Render the constants section.
       #
@@ -153,20 +154,18 @@ module Chiridion
       # @return [String] Rendered markdown
       def render_constants(constants:, complex_constants:)
         render("constants", {
-          "constants" => stringify_keys(constants),
-          "complex_constants" => stringify_keys(complex_constants)
-        })
+                 "constants"         => stringify_keys(constants),
+                 "complex_constants" => stringify_keys(complex_constants)
+               })
       end
 
       # Render the types section (type aliases used by a class/module).
       #
       # @param types [Array<Hash>] Types with :name, :definition, :description, :namespace
       # @return [String] Rendered markdown
-      def render_types(types:)
-        render("types", {
-          "types" => stringify_keys(types)
-        })
-      end
+      def render_types(types:) = render("types", {
+                                          "types" => stringify_keys(types)
+                                        })
 
       # Render the type aliases reference page.
       #
@@ -176,17 +175,15 @@ module Chiridion
       # @return [String] Rendered markdown
       def render_type_aliases(title:, description:, namespaces:)
         render("type_aliases", {
-          "title" => title,
-          "description" => description,
-          "namespaces" => stringify_keys(namespaces)
-        })
+                 "title"       => title,
+                 "description" => description,
+                 "namespaces"  => stringify_keys(namespaces)
+               })
       end
 
       private
 
-      def default_templates_path
-        File.expand_path("../../../templates", __dir__)
-      end
+      def default_templates_path = File.expand_path("../../../templates", __dir__)
 
       def render(template_name, variables)
         template = load_template(template_name)

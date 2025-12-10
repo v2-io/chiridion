@@ -51,9 +51,7 @@ module Chiridion
 
   class << self
     # @return [Config] Global configuration instance
-    def config
-      @config ||= Config.new
-    end
+    def config = @config ||= Config.new
 
     # Configure Chiridion with a block.
     #
@@ -65,9 +63,7 @@ module Chiridion
     end
 
     # Reset configuration to defaults (useful for testing).
-    def reset_config!
-      @config = Config.new
-    end
+    def reset_config! = @config = Config.new
 
     # Convenience method to run documentation refresh.
     #
@@ -76,12 +72,13 @@ module Chiridion
     # @return [void]
     def refresh(paths = nil, output: nil)
       engine = Engine.new(
-        paths: paths || [config.source_path],
-        output: output || config.output,
-        namespace_filter: config.namespace_filter,
-        include_specs: config.include_specs,
-        verbose: config.verbose,
-        logger: config.logger
+        paths:                   paths || [config.source_path],
+        output:                  output || config.output,
+        namespace_filter:        config.namespace_filter,
+        include_specs:           config.include_specs,
+        verbose:                 config.verbose,
+        logger:                  config.logger,
+        inline_source_threshold: config.inline_source_threshold
       )
       engine.refresh
     end
@@ -93,12 +90,13 @@ module Chiridion
     # @raise [SystemExit] Exits with code 1 if drift detected
     def check(paths = nil)
       engine = Engine.new(
-        paths: paths || [config.source_path],
-        output: config.output,
-        namespace_filter: config.namespace_filter,
-        include_specs: config.include_specs,
-        verbose: config.verbose,
-        logger: config.logger
+        paths:                   paths || [config.source_path],
+        output:                  config.output,
+        namespace_filter:        config.namespace_filter,
+        include_specs:           config.include_specs,
+        verbose:                 config.verbose,
+        logger:                  config.logger,
+        inline_source_threshold: config.inline_source_threshold
       )
       engine.check
     end

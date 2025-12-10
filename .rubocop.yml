@@ -1,0 +1,165 @@
+# Archema RuboCop Configuration
+# Generated: 2025-12-09
+
+plugins:
+  - rubocop-minitest
+
+AllCops:
+  TargetRubyVersion: 3.3
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - "tmp/**/*"
+    - "vendor/**/*"
+    - "coverage/**/*"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Style
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Allow both single and double quotes - use double by convention,
+# single when semantically meaningful (e.g., JSON-style string keys)
+Style/StringLiterals:
+  Enabled: false
+
+# Prefer explicit bracket syntax for symbol arrays
+Style/SymbolArray:
+  EnforcedStyle: brackets
+
+# Prefer %w[] for word arrays
+Style/WordArray:
+  EnforcedStyle: percent
+
+# Require class/module documentation
+Style/Documentation:
+  Enabled: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Layout
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Require spaces inside hash braces: { foo: 1 }
+Layout/SpaceInsideHashLiteralBraces:
+  EnforcedStyle: space
+
+# Allow extra spacing for alignment
+Layout/ExtraSpacing:
+  AllowForAlignment: true
+  AllowBeforeTrailingComments: true
+  ForceEqualSignAlignment: true
+
+# Allow RBS inline type comments like #: Type
+Layout/LeadingCommentSpace:
+  AllowRBSInlineAnnotation: true
+
+Style/EndlessMethod:
+  EnforcedStyle: require_always
+
+Layout/HashAlignment:
+  EnforcedHashRocketStyle: table
+  EnforcedColonStyle: table
+  EnforcedLastArgumentHashStyle: always_inspect
+
+Layout/FirstArrayElementIndentation:
+  EnforcedStyle: consistent
+
+Layout/FirstArgumentIndentation:
+  EnforcedStyle: consistent
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Metrics - Lenient thresholds for real-world code
+# ─────────────────────────────────────────────────────────────────────────────
+
+Metrics/MethodLength:
+  Max: 40
+  CountAsOne:
+    - array
+    - hash
+    - heredoc
+
+Metrics/AbcSize:
+  Max: 50
+
+Metrics/CyclomaticComplexity:
+  Max: 20
+
+Metrics/PerceivedComplexity:
+  Max: 15
+
+Metrics/ClassLength:
+  Max: 300
+  CountAsOne:
+    - array
+    - hash
+    - heredoc
+
+Metrics/BlockLength:
+  Max: 40
+  CountAsOne:
+    - array
+    - hash
+    - heredoc
+  Exclude:
+    - "test/**/*"
+    - "spec/**/*"
+    - "features/**/*"
+  AllowedMethods:
+    - describe
+    - context
+    - define
+    - configure
+    - namespace
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Naming
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Allow common short parameter names
+Naming/MethodParameterName:
+  AllowedNames:
+    - a
+    - b
+    - c
+    - e   # exception, element, entry
+    - i   # index
+    - j   # secondary index
+    - k   # key
+    - v   # value
+    - n   # number, count
+    - x   # coordinate, generic
+    - y   # coordinate
+    - id  # identifier
+    - io  # IO object
+    - op  # operation
+    - db  # database
+    - fn  # function
+    - _   # explicitly unused
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Lint
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Allow unused assignments with underscore prefix
+Lint/UselessAssignment:
+  Enabled: true
+
+# Allow unused method arguments with underscore prefix
+Lint/UnusedMethodArgument:
+  AllowUnusedKeywordArguments: true
+  IgnoreEmptyMethods: true
+
+# Don't require super in initialize - disable inline when intentional
+Lint/MissingSuper:
+  Enabled: false
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Minitest
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Don't require blank lines before assertions
+Minitest/EmptyLineBeforeAssertionMethods:
+  Enabled: false
+
+# Allow up to 6 assertions per test
+Minitest/MultipleAssertions:
+  Max: 6

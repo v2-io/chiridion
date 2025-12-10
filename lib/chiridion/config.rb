@@ -48,7 +48,7 @@ module Chiridion
     # @return [Boolean] Whether to extract examples from spec files
     attr_accessor :include_specs
 
-    # @return [String] Path to spec directory (relative to root)
+    # @return [String] Path to test directory (relative to root)
     attr_accessor :spec_path
 
     # @return [String] Path to RBS signatures directory (relative to root)
@@ -60,26 +60,30 @@ module Chiridion
     # @return [#info, #warn, #error, nil] Logger for output messages
     attr_accessor :logger
 
+    # @return [Integer, nil] Maximum body lines for inline source display.
+    #   Methods with body <= this many lines show their implementation inline.
+    #   Set to nil or 0 to disable inline source. Default: 10.
+    attr_accessor :inline_source_threshold
+
     def initialize
-      @root = Dir.pwd
-      @source_path = "lib"
-      @output = "docs/sys"
-      @namespace_filter = nil
-      @namespace_strip = nil
-      @github_repo = nil
-      @github_branch = "main"
-      @include_specs = false
-      @spec_path = "spec"
-      @rbs_path = "sig"
-      @verbose = false
-      @logger = nil
+      @root                    = Dir.pwd
+      @source_path             = "lib"
+      @output                  = "docs/sys"
+      @namespace_filter        = nil
+      @namespace_strip         = nil
+      @github_repo             = nil
+      @github_branch           = "main"
+      @include_specs           = false
+      @spec_path               = "test"
+      @rbs_path                = "sig"
+      @verbose                 = false
+      @logger                  = nil
+      @inline_source_threshold = 10
     end
 
     # Namespace prefix to strip from output paths.
     # Defaults to namespace_filter if not explicitly set.
-    def namespace_strip
-      @namespace_strip || @namespace_filter
-    end
+    def namespace_strip = @namespace_strip || @namespace_filter
 
     # Load configuration from a YAML file.
     #
@@ -89,7 +93,7 @@ module Chiridion
       return self unless File.exist?(path)
 
       require "yaml"
-      data = YAML.safe_load(File.read(path), symbolize_names: true)
+      data = YAML.safe_load_file(path, symbolize_names: true)
       load_hash(data)
     end
 
@@ -106,23 +110,15 @@ module Chiridion
     end
 
     # @return [String] Full path to source directory
-    def full_source_path
-      File.join(root, source_path)
-    end
+    def full_source_path = File.join(root, source_path)
 
     # @return [String] Full path to output directory
-    def full_output_path
-      File.join(root, output)
-    end
+    def full_output_path = File.join(root, output)
 
     # @return [String] Full path to spec directory
-    def full_spec_path
-      File.join(root, spec_path)
-    end
+    def full_spec_path = File.join(root, spec_path)
 
     # @return [String] Full path to RBS directory
-    def full_rbs_path
-      File.join(root, rbs_path)
-    end
+    def full_rbs_path = File.join(root, rbs_path)
   end
 end

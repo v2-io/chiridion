@@ -9,15 +9,15 @@ module Chiridion
     class SpecExampleLoader
       def initialize(spec_path, verbose, logger)
         @spec_path = spec_path
-        @verbose = verbose
-        @logger = logger
+        @verbose   = verbose
+        @logger    = logger
       end
 
       # Load spec examples for all spec files.
       #
       # @return [Hash{String => Hash}] Class path => { method_examples:, behaviors:, lets:, subjects: }
       def load
-        examples = {}
+        examples   = {}
         spec_files = Dir.glob("#{@spec_path}/**/*_spec.rb")
 
         return examples if spec_files.empty?
@@ -30,15 +30,15 @@ module Chiridion
       private
 
       def parse_file(file, examples)
-        content = File.read(file)
+        content       = File.read(file)
         current_class = extract_described_class(content)
         return unless current_class
 
         examples[current_class] ||= {
           method_examples: Hash.new { |h, k| h[k] = [] },
-          behaviors: Hash.new { |h, k| h[k] = [] },
-          lets: [],
-          subjects: []
+          behaviors:       Hash.new { |h, k| h[k] = [] },
+          lets:            [],
+          subjects:        []
         }
 
         extract_lets(content, examples[current_class])
@@ -48,9 +48,9 @@ module Chiridion
 
       def extract_described_class(content)
         # Match: RSpec.describe ClassName or describe ClassName
-        if content =~ /(?:RSpec\.)?describe\s+([A-Z][\w:]+)/
-          Regexp.last_match(1)
-        end
+        return unless content =~ /(?:RSpec\.)?describe\s+([A-Z][\w:]+)/
+
+        Regexp.last_match(1)
       end
 
       def extract_lets(content, data)
