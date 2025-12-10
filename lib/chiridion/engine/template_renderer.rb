@@ -76,6 +76,7 @@ module Chiridion
       # @param spec_examples [String, nil] Rendered spec examples section
       # @param see_also [String, nil] See also links
       # @param constants_section [String] Rendered constants section
+      # @param types_section [String] Rendered types section (type aliases used by this class)
       # @param methods_section [String] Rendered methods section
       # @return [String] Rendered markdown
       def render_document(
@@ -86,6 +87,7 @@ module Chiridion
         spec_examples: nil,
         see_also: nil,
         constants_section: "",
+        types_section: "",
         methods_section: ""
       )
         render("document", {
@@ -96,6 +98,7 @@ module Chiridion
           "spec_examples" => spec_examples,
           "see_also" => see_also,
           "constants_section" => constants_section,
+          "types_section" => types_section,
           "methods_section" => methods_section
         })
       end
@@ -152,6 +155,30 @@ module Chiridion
         render("constants", {
           "constants" => stringify_keys(constants),
           "complex_constants" => stringify_keys(complex_constants)
+        })
+      end
+
+      # Render the types section (type aliases used by a class/module).
+      #
+      # @param types [Array<Hash>] Types with :name, :definition, :description, :namespace
+      # @return [String] Rendered markdown
+      def render_types(types:)
+        render("types", {
+          "types" => stringify_keys(types)
+        })
+      end
+
+      # Render the type aliases reference page.
+      #
+      # @param title [String] Page title
+      # @param description [String] Page description
+      # @param namespaces [Array<Hash>] Namespaces with :name and :types arrays
+      # @return [String] Rendered markdown
+      def render_type_aliases(title:, description:, namespaces:)
+        render("type_aliases", {
+          "title" => title,
+          "description" => description,
+          "namespaces" => stringify_keys(namespaces)
         })
       end
 

@@ -156,9 +156,13 @@ module Chiridion
       YARD::Logger.instance.level = original_log_level
 
       # Load RBS types: inline annotations take precedence over sig/ files
-      inline_types = InlineRbsLoader.new(@verbose, @logger).load(@source_files)
+      inline_types, @rbs_file_namespaces = InlineRbsLoader.new(@verbose, @logger).load(@source_files)
       sig_types = RbsLoader.new(@rbs_path, @verbose, @logger).load
       @rbs_types = merge_rbs_types(sig_types, inline_types)
+
+      # Load type aliases from generated RBS files (sig/generated/ is standard for RBS::Inline)
+      rbs_generated_dir = find_rbs_generated_dir
+      @type_aliases = RbsTypeAliasLoader.new(@verbose, @logger, rbs_dir: rbs_generated_dir).load
 
       @spec_examples = @include_specs ? SpecExampleLoader.new(@spec_path, @verbose, @logger).load : {}
     end
@@ -176,6 +180,20 @@ module Chiridion
       end
     end
 
+    # Locate directory containing generated RBS files.
+    #
+    # RBS::Inline outputs to sig/generated/ by convention. Falls back to
+    # sig/ if generated/ doesn't exist, or nil if no RBS directory exists.
+    def find_rbs_generated_dir
+      generated_dir = File.join(@root, @rbs_path, "generated")
+      return generated_dir if Dir.exist?(generated_dir)
+
+      sig_dir = File.join(@root, @rbs_path)
+      return sig_dir if Dir.exist?(sig_dir)
+
+      nil
+    end
+
     def resolve_ruby_files(path)
       if File.directory?(path)
         Dir.glob("#{path}/**/*.rb")
@@ -189,12 +207,18 @@ module Chiridion
 
     def extract_documentation(registry)
       source_filter = partial_refresh? ? @source_files : nil
-      Extractor.new(
+      structure = Extractor.new(
         @rbs_types,
         @spec_examples,
         @namespace_filter,
-        @logger
+        @logger,
+        rbs_file_namespaces: @rbs_file_namespaces,
+        type_aliases: @type_aliases
       ).extract(registry, source_filter: source_filter)
+
+      # Add type aliases to the structure (for standalone reference page)
+      structure[:type_aliases] = @type_aliases
+      structure
     end
 
     def write_documentation(structure)
@@ -254,6 +278,7 @@ end
 require_relative "engine/extractor"
 require_relative "engine/rbs_loader"
 require_relative "engine/inline_rbs_loader"
+require_relative "engine/rbs_type_alias_loader"
 require_relative "engine/spec_example_loader"
 require_relative "engine/type_merger"
 require_relative "engine/class_linker"

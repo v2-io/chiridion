@@ -93,6 +93,44 @@ module Chiridion
         render_document(mod, include_mixins: false)
       end
 
+      # Render type aliases reference page.
+      #
+      # @param type_aliases [Hash{String => Array<Hash>}] namespace -> types mapping
+      # @return [String] Markdown documentation
+      def render_type_aliases(type_aliases)
+        return nil if type_aliases.nil? || type_aliases.empty?
+
+        frontmatter = {
+          generated: Time.now.utc.iso8601,
+          title: "Type Aliases Reference",
+          type: "reference",
+          description: "RBS type aliases defined across the codebase",
+          tags: ["types", "rbs", "reference"]
+        }
+
+        # Convert to array format for template
+        namespaces = type_aliases.map do |namespace, types|
+          {
+            name: namespace.empty? ? "(root)" : namespace,
+            types: types.map do |t|
+              {
+                name: t[:name],
+                definition: t[:definition],
+                description: t[:description]
+              }
+            end
+          }
+        end.sort_by { |ns| ns[:name] }
+
+        body = @template_renderer.render_type_aliases(
+          title: "Type Aliases Reference",
+          description: "RBS type aliases defined across the codebase. These types provide compile-time documentation and can be referenced in `@rbs` annotations.",
+          namespaces: namespaces
+        )
+
+        "#{render_frontmatter(frontmatter)}\n\n#{body}\n"
+      end
+
       private
 
       def render_document(obj, include_mixins:)
@@ -107,6 +145,7 @@ module Chiridion
           spec_examples: render_spec_examples(obj),
           see_also: render_see_also(obj[:see_also], obj[:path]),
           constants_section: render_constants(obj[:constants]),
+          types_section: render_types_section(obj[:referenced_types]),
           methods_section: render_methods(obj[:methods], obj[:path])
         )
 
@@ -243,6 +282,21 @@ module Chiridion
           constants: constant_data,
           complex_constants: complex_data
         )
+      end
+
+      def render_types_section(referenced_types)
+        return "" if referenced_types.nil? || referenced_types.empty?
+
+        types_data = referenced_types.map do |t|
+          {
+            name: t[:name],
+            definition: t[:definition],
+            description: t[:description],
+            namespace: t[:namespace]
+          }
+        end
+
+        @template_renderer.render_types(types: types_data)
       end
 
       def partition_constants(constants)

@@ -1,0 +1,15 @@
+{%- comment -%}Types section template - displays type aliases used by a class/module.{%- endcomment -%}
+## Types
+
+{%- for type in types %}
+
+### `{{ type.name }}`
+{%- if type.description %}
+
+{{ type.description }}
+{%- endif %}
+
+```rbs
+type {{ type.name }} = {{ type.definition }}
+```
+{%- endfor -%}

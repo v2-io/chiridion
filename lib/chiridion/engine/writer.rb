@@ -53,8 +53,19 @@ module Chiridion
 
         counts = { written: 0, skipped: 0 }
         write_index(structure, counts)
+        write_type_aliases(structure[:type_aliases], counts)
         write_objects(structure[:classes] + structure[:modules], counts)
         [counts[:written], counts[:skipped]]
+      end
+
+      def write_type_aliases(type_aliases, counts)
+        return if type_aliases.nil? || type_aliases.empty?
+
+        content = @renderer.render_type_aliases(type_aliases)
+        return if content.nil?
+
+        wrote = write_file(File.join(@output, "type-aliases.md"), content)
+        counts[wrote ? :written : :skipped] += 1
       end
 
       def write_index(structure, counts)

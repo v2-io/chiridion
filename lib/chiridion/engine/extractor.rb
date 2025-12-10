@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "set"
+
 module Chiridion
   class Engine
     # Extracts documentation structure from YARD registry.
@@ -8,12 +10,15 @@ module Chiridion
     # of classes, modules, methods, and constants for documentation generation.
     # Merges RBS type signatures when available.
     class Extractor
-      def initialize(rbs_types, spec_examples, namespace_filter, logger = nil)
+      def initialize(rbs_types, spec_examples, namespace_filter, logger = nil, rbs_file_namespaces: {}, type_aliases: {})
         @rbs_types = rbs_types
         @spec_examples = spec_examples
         @namespace_filter = namespace_filter
         @logger = logger
         @type_merger = TypeMerger.new(logger)
+        @rbs_file_namespaces = rbs_file_namespaces || {}
+        @type_aliases = type_aliases || {}
+        @type_alias_lookup = build_type_alias_lookup
       end
 
       # Extract documentation structure from YARD registry.
@@ -49,6 +54,8 @@ module Chiridion
       def extract_object(obj)
         path = obj.path
         needs_regen = needs_regeneration?(obj)
+        methods = needs_regen ? extract_methods(obj, path) : []
+
         {
           name: obj.name,
           path: path,
@@ -59,13 +66,14 @@ module Chiridion
           end_line: compute_end_line(obj),
           examples: needs_regen ? obj.tags(:example).map { |t| { name: t.name, text: t.text } } : [],
           see_also: needs_regen ? extract_see_tags(obj) : [],
-          methods: needs_regen ? extract_methods(obj, path) : [],
+          methods: methods,
           constants: needs_regen ? extract_constants(obj, path) : [],
           includes: obj.instance_mixins.map(&:path),
           extends: obj.class_mixins.map(&:path),
           superclass: obj.respond_to?(:superclass) ? obj.superclass&.path : nil,
           rbs_file: needs_regen ? find_rbs_file(path) : nil,
           spec_examples: needs_regen ? @spec_examples[path] : nil,
+          referenced_types: needs_regen ? collect_referenced_types(methods) : [],
           needs_regeneration: needs_regen
         }
       end
@@ -84,7 +92,17 @@ module Chiridion
         return true if @source_filter.nil?
 
         source_file = obj.file && File.expand_path(obj.file)
-        @source_filter.include?(source_file)
+        return true if @source_filter.include?(source_file)
+
+        # Also check if any filtered source file has @rbs content for this namespace.
+        # This handles files like shared_types.rb that reopen a module with @rbs!
+        # blocks but no new methods/classes - YARD attributes them to the original
+        # module definition, so we need to check the rbs_file_namespaces mapping.
+        obj_path = obj.path
+        @source_filter.any? do |filtered_file|
+          namespaces = @rbs_file_namespaces[filtered_file]
+          namespaces&.include?(obj_path)
+        end
       end
 
       def extract_constants(obj, class_path)
@@ -172,6 +190,54 @@ module Chiridion
 
       def to_snake_case(str)
         str.gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2').gsub(/([a-z\d])([A-Z])/, '\1_\2').downcase
+      end
+
+      # Build flat lookup of type alias names to their full definitions.
+      # Allows quick matching when scanning method signatures.
+      def build_type_alias_lookup
+        lookup = {}
+        @type_aliases.each do |namespace, types|
+          types.each do |type_info|
+            lookup[type_info[:name]] = type_info.merge(namespace: namespace)
+          end
+        end
+        lookup
+      end
+
+      # Scan method signatures for references to known type aliases.
+      # Returns array of type definitions used by this class's methods.
+      def collect_referenced_types(methods)
+        return [] if @type_alias_lookup.empty? || methods.empty?
+
+        referenced_names = Set.new
+
+        methods.each do |meth|
+          # Scan param types
+          meth[:params]&.each do |param|
+            extract_type_names(param[:types]).each { |name| referenced_names.add(name) }
+          end
+
+          # Scan return type
+          if meth[:returns]
+            extract_type_names(meth[:returns][:types]).each { |name| referenced_names.add(name) }
+          end
+        end
+
+        # Look up full definitions for referenced type names
+        referenced_names
+          .filter_map { |name| @type_alias_lookup[name] }
+          .sort_by { |t| t[:name] }
+      end
+
+      # Extract potential type alias names from type strings.
+      # Handles types like "filter_value", "Array[filter_value]", "Hash[Symbol, actor]"
+      def extract_type_names(types)
+        return [] unless types
+
+        Array(types).flat_map do |type_str|
+          # Extract all word tokens that could be type alias names
+          type_str.to_s.scan(/\b([a-z_][a-z0-9_]*)\b/i).flatten
+        end
       end
     end
   end

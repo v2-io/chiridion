@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
+require_relative "lib/chiridion/version"
+
 Gem::Specification.new do |spec|
   spec.name = "chiridion"
-  spec.version = "0.1.0"
+  spec.version = Chiridion::VERSION
   spec.authors = ["Joseph Wecker"]
   spec.email = ["joseph.wecker@gmail.com"]
 
