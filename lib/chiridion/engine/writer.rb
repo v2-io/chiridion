@@ -85,10 +85,12 @@ module Chiridion
       end
 
       def write_object(obj, counts)
-        path                                 = output_path(obj[:path])
+        path    = output_path(obj[:path])
+        content = obj[:type] == :class ? @renderer.render_class(obj) : @renderer.render_module(obj)
+
         FileUtils.mkdir_p(File.dirname(path))
-        content                              = obj[:type] == :class ? @renderer.render_class(obj) : @renderer.render_module(obj)
-        wrote                                = write_file(path, content)
+        wrote = write_file(path, content)
+
         counts[wrote ? :written : :skipped] += 1
         @logger.info "  #{wrote ? 'Wrote' : 'Unchanged'} #{path}" if @verbose
       end

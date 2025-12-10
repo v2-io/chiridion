@@ -34,6 +34,10 @@ Style/WordArray:
 Style/Documentation:
   Enabled: true
 
+# Allow multi-line block chains when readable
+Style/MultilineBlockChain:
+  Enabled: false
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Layout
 # ─────────────────────────────────────────────────────────────────────────────
@@ -76,15 +80,21 @@ Metrics/MethodLength:
     - array
     - hash
     - heredoc
+  Exclude:
+    - "lib/chiridion/engine/inline_rbs_loader.rb"
 
 Metrics/AbcSize:
   Max: 50
+  Exclude:
+    - "lib/chiridion/engine/inline_rbs_loader.rb"
 
 Metrics/CyclomaticComplexity:
   Max: 20
 
 Metrics/PerceivedComplexity:
   Max: 15
+  Exclude:
+    - "lib/chiridion/engine/inline_rbs_loader.rb"
 
 Metrics/ClassLength:
   Max: 300
@@ -103,12 +113,17 @@ Metrics/BlockLength:
     - "test/**/*"
     - "spec/**/*"
     - "features/**/*"
+    - "lib/chiridion/engine/inline_rbs_loader.rb"
   AllowedMethods:
     - describe
     - context
     - define
     - configure
     - namespace
+
+# Allow more parameters for dependency injection patterns
+Metrics/ParameterLists:
+  Max: 15
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Naming

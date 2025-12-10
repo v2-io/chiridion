@@ -29,6 +29,39 @@ tool "cop" do
   end
 end
 
+tool "gem" do
+  desc "Gem packaging tasks"
+
+  tool "build" do
+    desc "Build the gem"
+
+    def run
+      require_relative "lib/chiridion/version"
+
+      # Clean old gems
+      Dir.glob("chiridion-*.gem").each { |f| File.delete(f) }
+
+      exec("gem", "build", "chiridion.gemspec")
+    end
+  end
+
+  tool "install" do
+    desc "Build and install the gem locally"
+
+    def run
+      require_relative "lib/chiridion/version"
+
+      # Clean and build
+      Dir.glob("chiridion-*.gem").each { |f| File.delete(f) }
+      system("gem", "build", "chiridion.gemspec") || exit(1)
+
+      # Install
+      gem_file = "chiridion-#{Chiridion::VERSION}.gem"
+      exec("gem", "install", gem_file)
+    end
+  end
+end
+
 tool "docs" do
   desc "Documentation generation tasks"
 

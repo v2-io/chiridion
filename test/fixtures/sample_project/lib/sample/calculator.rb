@@ -65,7 +65,7 @@ module Sample
     # @param value [Numeric] value to check
     # @return [Boolean] true if positive
     def self.positive?(value)
-      value > 0
+      value.positive?
     end
   end
 end

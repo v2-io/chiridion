@@ -122,7 +122,8 @@ module Chiridion
 
         body = @template_renderer.render_type_aliases(
           title:       "Type Aliases Reference",
-          description: "RBS type aliases defined across the codebase. These types provide compile-time documentation and can be referenced in `@rbs` annotations.",
+          description: "RBS type aliases defined across the codebase. " \
+                       "These types can be referenced in `@rbs` annotations.",
           namespaces:  namespaces
         )
 
@@ -168,11 +169,11 @@ module Chiridion
       # Uses flow style [a, b, c] for compact arrays (methods, constants, tags).
       # Uses block style for arrays with wikilinks (related, inherited_by).
       # Omits nil values.
-      def render_frontmatter(fm)
+      def render_frontmatter(frontmatter)
         block_style_fields = [:related, :inherited_by]
 
         lines = ["---"]
-        fm.each do |key, value|
+        frontmatter.each do |key, value|
           next if value.nil?
 
           if value.is_a?(Array)

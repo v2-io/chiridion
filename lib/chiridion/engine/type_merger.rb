@@ -59,7 +59,7 @@ module Chiridion
         param.merge(types: [rbs_type])
       end
 
-      def clean_param_name(name) = name.to_s.delete_prefix("*").delete_prefix("**").delete_prefix("&").delete_suffix(":")
+      def clean_param_name(name) = name.to_s.gsub(/\A[*&]+/, "").delete_suffix(":")
 
       def check_param_mismatch(param, rbs_type, class_path, method_name, param_name)
         yard_type = param[:types]&.join(", ")

@@ -73,6 +73,7 @@ module Chiridion
         (?:https://github\.com/|git@github\.com:)
         ([^/]+)/([^/]+?)(?:\.git)?$
       }x
+      private_constant :GITHUB_REMOTE_PATTERN
 
       def extract_github_base_url(root)
         remote_url = `cd #{root} && git remote get-url origin 2>/dev/null`.strip

@@ -37,7 +37,7 @@ module Chiridion
 
     # @return [String, nil] Namespace prefix to strip from output paths
     #   Defaults to namespace_filter value.
-    attr_accessor :namespace_strip
+    attr_writer :namespace_strip
 
     # @return [String, nil] GitHub repository for source links (e.g., "user/repo")
     attr_accessor :github_repo
