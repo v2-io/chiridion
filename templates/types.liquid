@@ -3,13 +3,11 @@
 
 {%- for type in types %}
 
-### `{{ type.name }}`
+---
+### {{ type.name }}
 {%- if type.description %}
+(*{{ type.description }}*)
 
-{{ type.description }}
-{%- endif %}
-
-```rbs
-type {{ type.name }} = {{ type.definition }}
-```
+{% endif -%}
+`{{ type.definition }}`
 {%- endfor -%}

@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
     - Drift detection for CI/CD pipelines
     - toys/dx CLI task definitions
   DESC
-  spec.homepage = "https://github.com/josephwecker/chiridion"
+  spec.homepage = "https://github.com/v2-io/chiridion"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.2.0"
 
