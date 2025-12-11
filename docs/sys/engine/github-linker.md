@@ -1,5 +1,5 @@
 ---
-generated: 2025-12-10T22:33:19Z
+generated: 2025-12-11T22:51:37Z
 title: Chiridion::Engine::GithubLinker
 type: class
 source: lib/chiridion/engine/github_linker.rb:9
@@ -44,43 +44,23 @@ GITHUB_REMOTE_PATTERN = %r{
 
 
 
+## Attributes
+
+`⟨base_url : String⟩` — (Read) GitHub base URL (e.g., "https://github.com/org/repo")
+`⟨branch   : String⟩` — (Read) Git branch for source links
+
 ## Methods
 
-### base_url
-
-→ String — GitHub base URL (e.g., "https://github.com/org/repo")
-
-
-```ruby
-def base_url
-  @base_url
-end
-```
-
-
----
-### branch
-
-→ String — Git branch for source links
-
-
-```ruby
-def branch
-  @branch
-end
-```
-
-
----
 ### GithubLinker.new(...)
 
-⟨repo   : untyped = nil⟩
-⟨branch : untyped = "main"⟩
-⟨root   : untyped = Dir.pwd⟩
-→ GithubLinker — a new instance of GithubLinker
+`⟨repo   = nil⟩    `
+`⟨branch = "main"⟩ `
+`⟨root   = Dir.pwd⟩`
+⟶ `GithubLinker    ` — A new instance of GithubLinker
 
 
 ```ruby
+# lib/chiridion/engine/github_linker.rb : ~19
 def initialize(repo: nil, branch: "main", root: Dir.pwd)
   @branch   = branch
   @base_url = repo ? "https://github.com/#{repo}" : extract_github_base_url(root)
@@ -90,15 +70,16 @@ end
 
 ---
 ### link(...)
-*Generate a markdown link to a source location on GitHub.*
+Generate a markdown link to a source location on GitHub.
 
-⟨path       : String⟩ → Project-relative file path
-⟨start_line : Integer⟩ → Starting line number
-⟨end_line   : Integer = nil⟩ → Ending line number (optional)
-→ String — Markdown link or plain text if no GitHub remote
+`⟨path       : String⟩       ` — Project-relative file path
+`⟨start_line : Integer⟩      ` — Starting line number
+`⟨end_line   : Integer = nil⟩` — Ending line number (optional)
+⟶ `String                    ` — Markdown link or plain text if no GitHub remote
 
 
 ```ruby
+# lib/chiridion/engine/github_linker.rb : ~30
 def link(path, start_line, end_line = nil)
   text = format_text(path, start_line, end_line)
   return "`#{text}`" unless @base_url
@@ -111,18 +92,23 @@ end
 
 ---
 ### url(...)
-*Generate just the URL (for frontmatter).*
+Generate just the URL (for frontmatter).
 
-⟨path       : String⟩ → Project-relative file path
-⟨start_line : Integer⟩ → Starting line number
-⟨end_line   : Integer = nil⟩ → Ending line number (optional)
-→ String — GitHub URL or nil if no GitHub remote
+`⟨path       : String⟩       ` — Project-relative file path
+`⟨start_line : Integer⟩      ` — Starting line number
+`⟨end_line   : Integer = nil⟩` — Ending line number (optional)
+⟶ `String                    ` — GitHub URL or nil if no GitHub remote
 
 
 ```ruby
+# lib/chiridion/engine/github_linker.rb : ~44
 def url(path, start_line, end_line = nil)
   return nil unless @base_url
 
   format_url(path, start_line, end_line)
 end
 ```
+
+---
+
+**Private:** `#extract_github_base_url`:78, `#format_text`:52, `#format_url`:60

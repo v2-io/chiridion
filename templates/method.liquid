@@ -1,7 +1,7 @@
 {%- comment -%}Method documentation template.{%- endcomment -%}
 ### {{ display_name }}{% if has_params %}(...){% endif %}
 {%- if docstring %}
-*{{ docstring }}*
+{{ docstring | normalize_headers: 4 }}
 {%- endif -%}
 {%- if params.size > 0 or return_line %}
 
@@ -11,12 +11,6 @@
 {%- if return_line -%}
 {{ return_line }}
 {% endif %}
-{%- endif -%}
-{%- if inline_source %}
-
-```ruby
-{{ inline_source }}
-```
 {%- endif -%}
 {%- for ex in examples %}
 
@@ -41,3 +35,9 @@
 {{ ex.code }}
 ```
 {%- endfor -%}
+{%- if inline_source %}
+
+```ruby
+{{ inline_source }}
+```
+{%- endif -%}

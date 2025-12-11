@@ -1,5 +1,5 @@
 ---
-generated: 2025-12-10T22:33:19Z
+generated: 2025-12-11T22:51:37Z
 title: Chiridion::Engine::SpecExampleLoader
 type: class
 source: lib/chiridion/engine/spec_example_loader.rb:9
@@ -23,17 +23,20 @@ test descriptions that can serve as documentation examples.
 
 
 
+
+
 ## Methods
 
 ### SpecExampleLoader.new(...)
 
-⟨spec_path : untyped⟩
-⟨verbose   : untyped⟩
-⟨logger    : untyped⟩
-→ SpecExampleLoader — a new instance of SpecExampleLoader
+`⟨spec_path⟩        `
+`⟨verbose  ⟩        `
+`⟨logger   ⟩        `
+⟶ `SpecExampleLoader` — A new instance of SpecExampleLoader
 
 
 ```ruby
+# lib/chiridion/engine/spec_example_loader.rb : ~10
 def initialize(spec_path, verbose, logger)
   @spec_path = spec_path
   @verbose   = verbose
@@ -44,12 +47,13 @@ end
 
 ---
 ### load
-*Load spec examples for all spec files.*
+Load spec examples for all spec files.
 
-→ Hash{String =] Hash} — Class path => { method_examples:, behaviors:, lets:, subjects: }
+⟶ `Hash{String =] Hash}` — Class path => { method_examples:, behaviors:, lets:, subjects: }
 
 
 ```ruby
+# lib/chiridion/engine/spec_example_loader.rb : ~19
 def load
   examples   = {}
   spec_files = Dir.glob("#{@spec_path}/**/*_spec.rb")
@@ -61,3 +65,7 @@ def load
   examples
 end
 ```
+
+---
+
+**Private:** `#extract_behaviors`:70, `#extract_described_class`:49, `#extract_lets`:56, `#extract_subjects`:63, `#parse_file`:32

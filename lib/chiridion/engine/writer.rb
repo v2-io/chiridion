@@ -20,7 +20,8 @@ module Chiridion
         github_branch: "main",
         project_title: "API Documentation",
         index_description: nil,
-        inline_source_threshold: 10
+        inline_source_threshold: 10,
+        rbs_attr_types: {}
       )
         @output          = output
         @namespace_strip = namespace_strip
@@ -35,7 +36,8 @@ module Chiridion
           github_branch:           github_branch,
           project_title:           project_title,
           index_description:       index_description,
-          inline_source_threshold: inline_source_threshold
+          inline_source_threshold: inline_source_threshold,
+          rbs_attr_types:          rbs_attr_types
         )
       end
 

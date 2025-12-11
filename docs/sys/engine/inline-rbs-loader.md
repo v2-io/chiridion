@@ -1,5 +1,5 @@
 ---
-generated: 2025-12-10T22:33:19Z
+generated: 2025-12-11T22:51:37Z
 title: Chiridion::Engine::InlineRbsLoader
 type: class
 source: lib/chiridion/engine/inline_rbs_loader.rb:18
@@ -32,16 +32,19 @@ separate sig/ files as a fallback.
 
 
 
+
+
 ## Methods
 
 ### InlineRbsLoader.new(...)
 
-⟨verbose : untyped⟩
-⟨logger  : untyped⟩
-→ InlineRbsLoader — a new instance of InlineRbsLoader
+`⟨verbose⟩        `
+`⟨logger ⟩        `
+⟶ `InlineRbsLoader` — A new instance of InlineRbsLoader
 
 
 ```ruby
+# lib/chiridion/engine/inline_rbs_loader.rb : ~19
 def initialize(verbose, logger)
   @verbose = verbose
   @logger  = logger
@@ -51,9 +54,13 @@ end
 
 ---
 ### load(...)
-*Extract inline RBS annotations from Ruby source files.*
+Extract inline RBS annotations from Ruby source files.
 
-⟨source_files : Array[String]⟩ → Paths to Ruby files
-→ Array(Hash, Hash) — [signatures, rbs_file_namespaces]
+`⟨source_files : Array[String]⟩` — Paths to Ruby files
+⟶ `Array(Hash, Hash)           ` — [signatures, rbs_file_namespaces]
 - signatures: class -> method -> signature
 - rbs_file_namespaces: file -> [namespaces] for files with @rbs content
+
+---
+
+**Private:** `#build_signature`:130, `#capitalize_first`:123, `#current_namespace`:121, `#parse_file`:46

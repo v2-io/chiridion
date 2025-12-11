@@ -110,8 +110,8 @@ class EngineTest < Minitest::Test
     create_engine(inline_source_threshold: 10).refresh
     content = File.read(File.join(@output, "calculator.md"))
 
-    # Short method 'add' should have inline source
-    assert_match(/```ruby\ndef add/, content)
+    # Short method 'add' should have inline source with location comment
+    assert_match(/```ruby\n# .+ : ~\d+\ndef add/, content)
   end
 
   def test_inline_source_excluded_for_long_methods
@@ -224,8 +224,8 @@ class EngineTest < Minitest::Test
     create_engine(inline_source_threshold: 10).refresh
     content = File.read(File.join(@output, "formatter.md"))
 
-    # Short methods like 'center' should have inline source
-    assert_match(/```ruby\ndef center/, content, "Short YARD-only methods should have inline source")
+    # Short methods like 'center' should have inline source with location comment
+    assert_match(/```ruby\n# .+ : ~\d+\ndef center/, content, "Short YARD-only methods should have inline source")
   end
 
   def test_yard_only_class_see_tags_captured

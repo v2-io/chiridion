@@ -5,22 +5,23 @@ Variables:
   - complex_constants: Array of complex constants for separate rendering
 {% endcomment %}
 ## Constants
+{%- assign has_simple = false %}{% for c in constants %}{% unless c.is_complex %}{% assign has_simple = true %}{% endunless %}{% endfor %}
+{%- if has_simple %}
 
 | Constant | Value | Description |
 |----------|-------|-------------|
-{% for c in constants %}{%- if c.is_complex -%}
-| `{{ c.name }}` | *(see below)* | {{ c.docstring | strip_newlines }} |
-{%- else -%}
-| `{{ c.name }}` | `{{ c.value | escape_pipes }}` | {{ c.docstring | strip_newlines }} |
-{%- endif %}
-{% endfor %}
-{% for c in complex_constants %}
+{% for c in constants %}{%- unless c.is_complex -%}
+| `{{ c.name }}` | `{{ c.value | escape_pipes }}` | {{ c.docstring | strip_rbs_blocks | strip_newlines }} |
+{% endunless -%}{% endfor -%}
+{%- endif -%}
+{%- for c in complex_constants %}
 
 ### {{ c.name }}
-{% if c.docstring != blank %}
-
-{{ c.docstring }}{% endif %}
-
+{% assign clean_doc = c.docstring | strip_rbs_blocks | normalize_headers: 4 -%}
+{%- if clean_doc != blank %}
+{{ clean_doc }}
+{% endif -%}
 ```ruby
 {{ c.name }} = {{ c.value }}
-```{% endfor %}
+```
+{%- endfor -%}

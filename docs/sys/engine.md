@@ -1,5 +1,5 @@
 ---
-generated: 2025-12-10T22:33:19Z
+generated: 2025-12-11T22:51:37Z
 title: Chiridion::Engine
 type: class
 source: lib/chiridion/engine.rb:40
@@ -59,58 +59,37 @@ engine.refresh
 
 
 
+## Attributes
+
+`⟨output : String⟩       ` — (Read) Output directory for generated docs
+`⟨paths  : Array<String>⟩` — (Read) Source paths being documented
+
 ## Methods
 
-### paths
-
-→ Array[String] — Source paths being documented
-
-
-```ruby
-def paths
-  @paths
-end
-```
-
-
----
-### output
-
-→ String — Output directory for generated docs
-
-
-```ruby
-def output
-  @output
-end
-```
-
-
----
 ### Engine.new(...)
-*Create a new documentation engine.*
+Create a new documentation engine.
 
-⟨paths                   : untyped⟩
-⟨output                  : untyped⟩
-⟨namespace_filter        : untyped = nil⟩
-⟨namespace_strip         : untyped = nil⟩
-⟨include_specs           : untyped = false⟩
-⟨verbose                 : untyped = false⟩
-⟨logger                  : untyped = nil⟩
-⟨root                    : untyped = Dir.pwd⟩
-⟨rbs_path                : untyped = "sig"⟩
-⟨spec_path               : untyped = "test"⟩
-⟨github_repo             : untyped = nil⟩
-⟨github_branch           : untyped = "main"⟩
-⟨project_title           : untyped = "API Documentation"⟩
-⟨index_description       : untyped = nil⟩
-⟨inline_source_threshold : untyped = 10⟩
-→ Engine — a new instance of Engine
+`⟨paths                  ⟩                      `
+`⟨output                 ⟩                      `
+`⟨namespace_filter        = nil⟩                `
+`⟨namespace_strip         = nil⟩                `
+`⟨include_specs           = false⟩              `
+`⟨verbose                 = false⟩              `
+`⟨logger                  = nil⟩                `
+`⟨root                    = Dir.pwd⟩            `
+`⟨rbs_path                = "sig"⟩              `
+`⟨spec_path               = "test"⟩             `
+`⟨github_repo             = nil⟩                `
+`⟨github_branch           = "main"⟩             `
+`⟨project_title           = "API Documentation"⟩`
+`⟨index_description       = nil⟩                `
+`⟨inline_source_threshold = 10⟩                 `
+⟶ `Engine                                       ` — A new instance of Engine
 
 
 ---
 ### refresh
-*Generate documentation from source and write to output directory.
+Generate documentation from source and write to output directory.
 
 This is the main entry point for documentation generation. It:
 1. Parses Ruby source files with YARD
@@ -118,11 +97,13 @@ This is the main entry point for documentation generation. It:
 3. Extracts spec examples (if enabled)
 4. Merges types with YARD docs
 5. Renders to markdown with wikilinks
-6. Writes files with content-based change detection*
+6. Writes files with content-based change detection
 
 ```ruby
+# lib/chiridion/engine.rb : ~110
 def refresh
   require "yard"
+  register_rbs_tag
 
   @logger.info "Parsing Ruby files in #{paths_description}..."
 
@@ -136,14 +117,16 @@ end
 
 ---
 ### check
-*Check for documentation drift without writing files.
+Check for documentation drift without writing files.
 
 Compares what would be generated against existing docs. Useful in CI
-to ensure docs are kept in sync with source code changes.*
+to ensure docs are kept in sync with source code changes.
 
 ```ruby
+# lib/chiridion/engine.rb : ~129
 def check
   require "yard"
+  register_rbs_tag
 
   @logger.info "Checking documentation drift for #{paths_description}..."
 
@@ -152,3 +135,7 @@ def check
   check_for_drift(doc_structure)
 end
 ```
+
+---
+
+**Private:** `#check_for_drift`:248, `#extract_documentation`:216, `#find_rbs_generated_dir`:195, `#load_or_create_registry`:182, `#load_sources`:151, `#merge_rbs_types`:265, `#partial_refresh?`:180, `#paths_description`:142, `#register_rbs_tag`:145, `#resolve_ruby_files`:205, `#write_documentation`:232

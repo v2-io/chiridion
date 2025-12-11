@@ -38,13 +38,18 @@ module Chiridion
       def merge_return(yard_return, rbs_data, class_path, method_name)
         return yard_return unless rbs_data&.dig(:returns)
 
-        rbs_return = rbs_data[:returns]
+        rbs_return_data = rbs_data[:returns]
+
+        # Handle both old format (string) and new format ({ type:, desc: })
+        rbs_type = rbs_return_data.is_a?(Hash) ? rbs_return_data[:type] : rbs_return_data
+        rbs_desc = rbs_return_data.is_a?(Hash) ? rbs_return_data[:desc] : nil
 
         if yard_return
-          check_return_mismatch(yard_return, rbs_return, class_path, method_name)
-          yard_return.merge(types: [rbs_return])
+          check_return_mismatch(yard_return, rbs_type, class_path, method_name)
+          merged_desc = merge_description(yard_return[:text], rbs_desc)
+          yard_return.merge(types: [rbs_type], text: merged_desc)
         else
-          { types: [rbs_return], text: nil }
+          { types: [rbs_type], text: rbs_desc }
         end
       end
 
@@ -52,11 +57,25 @@ module Chiridion
 
       def merge_single_param(param, rbs_params, class_path, method_name)
         param_name = clean_param_name(param[:name])
-        rbs_type   = rbs_params[param_name]
-        return param unless rbs_type
+        rbs_data   = rbs_params[param_name]
+        return param unless rbs_data
+
+        # Handle both old format (string) and new format ({ type:, desc: })
+        rbs_type = rbs_data.is_a?(Hash) ? rbs_data[:type] : rbs_data
+        rbs_desc = rbs_data.is_a?(Hash) ? rbs_data[:desc] : nil
 
         check_param_mismatch(param, rbs_type, class_path, method_name, param_name)
-        param.merge(types: [rbs_type])
+
+        merged_desc = merge_description(param[:text], rbs_desc)
+        param.merge(types: [rbs_type], text: merged_desc)
+      end
+
+      # Merge descriptions - longer one wins, tie goes to RBS (co-located).
+      def merge_description(yard_desc, rbs_desc)
+        return rbs_desc if yard_desc.to_s.strip.empty?
+        return yard_desc if rbs_desc.to_s.strip.empty?
+
+        rbs_desc.to_s.length >= yard_desc.to_s.length ? rbs_desc : yard_desc
       end
 
       def clean_param_name(name) = name.to_s.gsub(/\A[*&]+/, "").delete_suffix(":")

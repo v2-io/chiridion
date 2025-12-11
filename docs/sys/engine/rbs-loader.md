@@ -1,5 +1,5 @@
 ---
-generated: 2025-12-10T22:33:19Z
+generated: 2025-12-11T22:51:37Z
 title: Chiridion::Engine::RbsLoader
 type: class
 source: lib/chiridion/engine/rbs_loader.rb:9
@@ -23,17 +23,20 @@ providing accurate type information in generated docs.
 
 
 
+
+
 ## Methods
 
 ### RbsLoader.new(...)
 
-⟨rbs_path : untyped⟩
-⟨verbose  : untyped⟩
-⟨logger   : untyped⟩
-→ RbsLoader — a new instance of RbsLoader
+`⟨rbs_path⟩ `
+`⟨verbose ⟩ `
+`⟨logger  ⟩ `
+⟶ `RbsLoader` — A new instance of RbsLoader
 
 
 ```ruby
+# lib/chiridion/engine/rbs_loader.rb : ~10
 def initialize(rbs_path, verbose, logger)
   @rbs_path = rbs_path
   @verbose  = verbose
@@ -44,12 +47,13 @@ end
 
 ---
 ### load
-*Load all RBS files and return a hash of class -> method -> signature.*
+Load all RBS files and return a hash of class -> method -> signature.
 
-→ Hash{String =] Hash{String =] Hash}} — Nested hash of signatures
+⟶ `Hash{String =] Hash{String =] Hash}}` — Nested hash of signatures
 
 
 ```ruby
+# lib/chiridion/engine/rbs_loader.rb : ~19
 def load
   signatures = {}
   rbs_files  = Dir.glob("#{@rbs_path}/**/*.rbs")
@@ -61,3 +65,7 @@ def load
   signatures
 end
 ```
+
+---
+
+**Private:** `#extract_attr_signature`:61, `#extract_class_name`:45, `#extract_method_signature`:53, `#parse_file`:32, `#parse_params`:92, `#parse_signature`:77, `#parse_single_param`:105, `#split_respecting_brackets`:120

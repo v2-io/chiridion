@@ -151,7 +151,7 @@ module Chiridion
     def load_sources
       # Suppress YARD's verbose proxy warnings unless in verbose mode
       original_log_level          = YARD::Logger.instance.level
-      YARD::Logger.instance.level = @verbose ? Logger::WARN : Logger::ERROR
+      YARD::Logger.instance.level = @verbose ? ::Logger::WARN : ::Logger::ERROR
 
       @source_files = @paths.flat_map { |p| resolve_ruby_files(p) }.map { |f| File.expand_path(f) }
 
@@ -166,9 +166,9 @@ module Chiridion
       YARD::Logger.instance.level = original_log_level
 
       # Load RBS types: inline annotations take precedence over sig/ files
-      inline_types, @rbs_file_namespaces = InlineRbsLoader.new(@verbose, @logger).load(@source_files)
-      sig_types                          = RbsLoader.new(@rbs_path, @verbose, @logger).load
-      @rbs_types                         = merge_rbs_types(sig_types, inline_types)
+      inline_types, @rbs_file_namespaces, @rbs_attr_types = InlineRbsLoader.new(@verbose, @logger).load(@source_files)
+      sig_types                                           = RbsLoader.new(@rbs_path, @verbose, @logger).load
+      @rbs_types                                          = merge_rbs_types(sig_types, inline_types)
 
       # Load type aliases from generated RBS files (sig/generated/ is standard for RBS::Inline)
       rbs_generated_dir = find_rbs_generated_dir
@@ -241,7 +241,8 @@ module Chiridion
         github_branch:           @github_branch,
         project_title:           @project_title,
         index_description:       @index_description,
-        inline_source_threshold: @inline_source_threshold
+        inline_source_threshold: @inline_source_threshold,
+        rbs_attr_types:          @rbs_attr_types
       ).write(structure)
     end
 

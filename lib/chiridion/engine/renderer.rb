@@ -29,13 +29,15 @@ module Chiridion
         project_title: "API Documentation",
         index_description: nil,
         templates_path: nil,
-        inline_source_threshold: 10
+        inline_source_threshold: 10,
+        rbs_attr_types: {}
       )
         @namespace_strip         = namespace_strip
         @include_specs           = include_specs
         @root                    = root
         @index_description       = index_description || "Auto-generated from source code."
         @inline_source_threshold = inline_source_threshold
+        @rbs_attr_types          = rbs_attr_types || {}
         @class_linker            = ClassLinker.new(namespace_strip: namespace_strip)
         @github_linker           = GithubLinker.new(repo: github_repo, branch: github_branch, root: root)
         @frontmatter_builder     = FrontmatterBuilder.new(
@@ -136,16 +138,24 @@ module Chiridion
         frontmatter = build_document_frontmatter(obj)
         docstring   = @class_linker.linkify_docstring(obj[:docstring], context: obj[:path])
 
+        # Partition attributes from regular methods
+        attrs, regular  = partition_attributes(obj[:methods] || [])
+        attrs_section   = render_attributes_section(attrs, obj[:path])
+        methods_section = render_methods_only(regular, obj[:path])
+        private_summary = render_private_methods_summary(obj[:private_methods])
+        full_methods    = [methods_section, private_summary].reject(&:empty?).join("\n\n")
+
         body = @template_renderer.render_document(
-          title:             obj[:path],
-          docstring:         docstring,
-          mixins:            include_mixins ? render_mixins(obj) : nil,
-          examples:          obj[:examples] || [],
-          spec_examples:     render_spec_examples(obj),
-          see_also:          render_see_also(obj[:see_also], obj[:path]),
-          constants_section: render_constants(obj[:constants]),
-          types_section:     render_types_section(obj[:referenced_types]),
-          methods_section:   render_methods(obj[:methods], obj[:path])
+          title:              obj[:path],
+          docstring:          docstring,
+          mixins:             include_mixins ? render_mixins(obj) : nil,
+          examples:           obj[:examples] || [],
+          spec_examples:      render_spec_examples(obj),
+          see_also:           render_see_also(obj[:see_also], obj[:path]),
+          constants_section:  render_constants(obj[:constants]),
+          types_section:      render_types_section(obj[:referenced_types]),
+          attributes_section: attrs_section,
+          methods_section:    full_methods
         )
 
         "#{render_frontmatter(frontmatter)}\n\n#{body}\n"
@@ -296,7 +306,25 @@ module Chiridion
         @template_renderer.render_types(types: types_data)
       end
 
-      def partition_constants(constants) = constants.partition { |c| c[:value].to_s.count("\n") <= 1 }
+      def partition_constants(constants)
+        constants.partition { |c| !complex_constant?(c) }
+      end
+
+      def complex_constant?(c)
+        value = c[:value].to_s
+        doc   = c[:docstring].to_s
+
+        # Complex if value has multiple lines
+        return true if value.count("\n") > 1
+
+        # Complex if docstring has markdown structure or is lengthy
+        return true if doc.count("\n") > 1
+        return true if doc.match?(/^#+\s/)           # Headers
+        return true if doc.match?(/^[-*]\s/)         # Bullet points
+        return true if doc.length > 120              # Long single-line descriptions
+
+        false
+      end
 
       def format_constant_value(value, is_complex)
         return "" if is_complex
@@ -307,26 +335,143 @@ module Chiridion
 
       def strip_freeze(str) = str.to_s.delete_suffix(".freeze")
 
-      def render_methods(methods, context)
+      def render_methods_only(methods, context)
         return "" if methods.nil? || methods.empty?
 
         rendered_methods = methods.map { |m| render_method(m, context) }
         @template_renderer.render_methods(methods: rendered_methods)
       end
 
+      # Partition methods into attributes (reader/writer pairs) and regular methods.
+      # Returns [attrs_hash, regular_methods] where attrs_hash maps name -> {reader:, writer:}
+      def partition_attributes(methods)
+        attrs   = {}
+        regular = []
+
+        methods.each do |m|
+          case m[:attr_type]
+          when :reader
+            name           = m[:name].to_s
+            (attrs[name] ||= {})[:reader] = m
+          when :writer
+            name           = m[:name].to_s.chomp("=")
+            (attrs[name] ||= {})[:writer] = m
+          else
+            regular << m
+          end
+        end
+
+        [attrs, regular]
+      end
+
+      # Render attributes section with param-like formatting.
+      def render_attributes_section(attrs, class_path)
+        return "" if attrs.empty?
+
+        sorted       = attrs.sort_by { |name, _| name }
+        max_name_len = sorted.map { |name, _| name.length }.max
+
+        # Build inners to find max width
+        inners        = sorted.map { |name, info| build_attr_inner(name, info, max_name_len, class_path) }
+        max_inner_len = inners.map(&:length).max
+
+        lines = sorted.zip(inners).map do |(name, info), inner|
+          format_attr_line(name, info, inner, max_inner_len, class_path)
+        end
+
+        "## Attributes\n\n#{lines.join("\n")}"
+      end
+
+      def build_attr_inner(name, info, max_name_len, class_path)
+        type   = attr_type_str(info, name, class_path)
+        padded = name.ljust(max_name_len)
+        type ? "#{padded} : #{type}" : padded
+      end
+
+      def format_attr_line(name, info, inner, max_inner_len, class_path)
+        mode       = attr_mode(info)
+        desc       = attr_description(name, info, class_path)
+        padded_sig = "⟨#{inner}⟩".ljust(max_inner_len + 2)
+
+        # Prepend (Read) or (Write) for non-rw attributes
+        prefix = case mode
+                 when "r" then "(Read) "
+                 when "w" then "(Write) "
+                 else ""
+                 end
+
+        full_desc = "#{prefix}#{desc}".strip
+        full_desc.empty? ? "`#{padded_sig}`" : "`#{padded_sig}` — #{full_desc}"
+      end
+
+      def attr_mode(info)
+        has_reader = info[:reader]
+        has_writer = info[:writer]
+        return "rw" if has_reader && has_writer
+        return "r" if has_reader
+
+        "w"
+      end
+
+      def attr_description(name, info, class_path)
+        # First check @rbs_attr_types for description (most specific)
+        rbs_data = @rbs_attr_types.dig(class_path, name)
+        rbs_desc = rbs_data[:desc] if rbs_data.is_a?(Hash)
+        return rbs_desc if rbs_desc && !rbs_desc.empty?
+
+        # Fall back to YARD reader's return description, then writer's
+        reader_desc = info[:reader]&.dig(:returns, :text).to_s
+        desc        = reader_desc.empty? ? info[:writer]&.dig(:returns, :text).to_s : reader_desc
+        # Collapse to single line, capitalize
+        clean       = desc.gsub(/\s*\n\s*/, " ").strip
+        capitalize_first(clean)
+      end
+
+      def attr_type_str(info, attr_name, class_path)
+        # First check @rbs_attr_types (from #: annotations or @rbs! blocks)
+        rbs_data = @rbs_attr_types.dig(class_path, attr_name)
+        rbs_type = rbs_data.is_a?(Hash) ? rbs_data[:type] : rbs_data
+        return rbs_type if rbs_type && rbs_type != "untyped"
+
+        # Fall back to reader's return type or writer's param type
+        reader_type = info[:reader]&.dig(:returns, :types)&.first
+        return reader_type if reader_type && reader_type != "untyped" && reader_type != "Object"
+
+        first_param = info[:writer]&.dig(:params)&.first
+        writer_type = first_param&.dig(:types)&.first
+        return writer_type if writer_type && writer_type != "untyped" && writer_type != "Object"
+
+        nil
+      end
+
+      # Render a compact summary of private methods.
+      def render_private_methods_summary(private_methods)
+        return "" if private_methods.nil? || private_methods.empty?
+
+        sorted = private_methods.sort_by { |m| [m[:scope] == :class ? 0 : 1, m[:name].to_s] }
+        items  = sorted.map do |m|
+          prefix = m[:scope] == :class ? "." : "#"
+          line   = m[:line] ? ":#{m[:line]}" : ""
+          "`#{prefix}#{m[:name]}`#{line}"
+        end
+
+        "---\n\n**Private:** #{items.join(', ')}"
+      end
+
       def render_method(meth, context)
         display_name = method_display_name(meth)
         docstring    = if useful_docstring?(meth[:docstring])
-                         @class_linker.linkify_docstring(meth[:docstring],
-                                                         context: context)
+                         @class_linker.linkify_docstring(meth[:docstring], context: context)
                        end
+
+        params, return_line = render_params_and_return(meth)
 
         @template_renderer.render_method(
           display_name:  display_name,
           has_params:    meth[:params]&.any?,
           docstring:     docstring,
-          params:        render_params_with_types(meth[:params]),
-          return_line:   render_return_line(meth),
+          params:        params,
+          return_line:   return_line,
           examples:      meth[:examples] || [],
           behaviors:     @include_specs ? (meth[:spec_behaviors] || []).first(8) : [],
           spec_examples: @include_specs ? (meth[:spec_examples] || []).first(3) : [],
@@ -335,6 +480,7 @@ module Chiridion
       end
 
       # Returns method source if it's short enough to display inline.
+      # Prepends a location comment showing relative file path and line number.
       def inline_source_for(meth)
         return nil unless @inline_source_threshold&.positive?
         return nil unless meth[:source]
@@ -342,7 +488,13 @@ module Chiridion
         body_lines = meth[:source_body_lines]
         return nil if body_lines.nil? || body_lines > @inline_source_threshold
 
-        meth[:source]
+        source = meth[:source]
+        if meth[:file] && meth[:line]
+          location = "# #{relative_path(meth[:file])} : ~#{meth[:line]}\n"
+          "#{location}#{source}"
+        else
+          source
+        end
       end
 
       def method_display_name(meth)
@@ -359,23 +511,42 @@ module Chiridion
         true
       end
 
-      def render_params_with_types(params)
-        return [] if params.nil? || params.empty?
+      # Render params and return together so they can share alignment width.
+      def render_params_and_return(meth)
+        params  = meth[:params] || []
+        returns = meth[:returns]
 
-        max_name_len = params.map { |p| clean_param_name(p[:name]).length }.max
-        params.map { |p| format_param(p, max_name_len) }
+        # Calculate param inners and max width
+        max_name_len  = params.map { |p| clean_param_name(p[:name]).length }.max || 0
+        param_inners  = params.map { |p| build_param_inner(p, max_name_len) }
+        max_inner_len = param_inners.map(&:length).max || 0
+
+        # Include return type in width calculation
+        return_type   = extract_return_type(meth)
+        max_inner_len = [max_inner_len, return_type&.length || 0].max if return_type
+
+        param_lines = params.zip(param_inners).map { |p, inner| format_param_line(p, inner, max_inner_len) }
+        return_line = render_return_line(returns, return_type, max_inner_len)
+
+        [param_lines, return_line]
       end
 
-      def format_param(param, max_name_len)
-        name    = clean_param_name(param[:name])
-        prefix  = extract_param_prefix(param[:name])
-        type    = normalize_type(param[:types]&.first || "untyped")
-        default = param[:default]
-        desc    = param[:text].to_s
-        padded  = name.ljust(max_name_len)
+      def build_param_inner(param, max_name_len)
+        name     = clean_param_name(param[:name])
+        prefix   = extract_param_prefix(param[:name])
+        raw_type = param[:types]&.first
+        type     = raw_type && raw_type != "untyped" ? " : #{normalize_type(raw_type)}" : ""
+        default  = param[:default]
+        padded   = name.ljust(max_name_len)
 
-        inner = default ? "#{prefix}#{padded} : #{type} = #{default}" : "#{prefix}#{padded} : #{type}"
-        desc.empty? ? "⟨#{inner}⟩" : "⟨#{inner}⟩ → #{desc}"
+        default ? "#{prefix}#{padded}#{type} = #{default}" : "#{prefix}#{padded}#{type}"
+      end
+
+      def format_param_line(param, inner, max_inner_len)
+        desc       = param[:text].to_s
+        padded_sig = "⟨#{inner}⟩".ljust(max_inner_len + 2) # +2 for ⟨⟩
+
+        desc.empty? ? "`#{padded_sig}`" : "`#{padded_sig}` — #{desc}"
       end
 
       def clean_param_name(name) = name.to_s.delete_prefix("*").delete_prefix("*").delete_prefix("&").chomp(":")
@@ -391,7 +562,7 @@ module Chiridion
 
       def normalize_type(type) = type.tr("<", "[").tr(">", "]")
 
-      def render_return_line(meth)
+      def extract_return_type(meth)
         returns = meth[:returns]
         return nil unless returns
 
@@ -399,9 +570,23 @@ module Chiridion
         type = meth[:class_name] if meth[:name] == :initialize && type == "void"
         return nil if type.nil? || type == "void"
 
-        type = normalize_type(type)
-        desc = returns[:text].to_s
-        desc.empty? ? "→ #{type}" : "→ #{type} — #{desc}"
+        normalize_type(type)
+      end
+
+      def render_return_line(returns, type, max_width)
+        return nil unless type
+
+        desc       = capitalize_first(returns[:text].to_s)
+        padded_sig = type.ljust(max_width)
+
+        desc.to_s.empty? ? "⟶ `#{padded_sig}`" : "⟶ `#{padded_sig}` — #{desc}"
+      end
+
+      def capitalize_first(str)
+        return nil if str.nil? || str.strip.empty?
+
+        s = str.strip
+        s[0].upcase + s[1..]
       end
 
       def to_kebab_case(str)

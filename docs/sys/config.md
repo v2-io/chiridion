@@ -1,5 +1,5 @@
 ---
-generated: 2025-12-10T22:33:19Z
+generated: 2025-12-11T22:51:37Z
 title: Chiridion::Config
 type: class
 source: lib/chiridion/config.rb:23
@@ -44,381 +44,50 @@ include_specs: true
 
 
 
+## Attributes
+
+`⟨github_branch           : String⟩ ` — Git branch for source links
+`⟨github_repo             : String⟩ ` — GitHub repository for source links (e.g., "user/repo")
+`⟨include_specs           : Boolean⟩` — Whether to extract examples from spec files
+`⟨inline_source_threshold : Integer⟩` — Maximum body lines for inline source display. Methods with body <= this many lines show their implementation inline. Set to nil or 0 to disable inline source. Default: 10.
+`⟨logger                  : #info⟩  ` — Logger for output messages
+`⟨namespace_filter        : String⟩ ` — Namespace prefix to filter (e.g., "MyProject::") Only classes/modules starting with this prefix are documented. If nil, all classes are included.
+`⟨namespace_strip        ⟩          ` — (Write) Namespace prefix to strip from output paths Defaults to namespace_filter value.
+`⟨output                  : String⟩ ` — Output directory for generated docs
+`⟨rbs_path                : String⟩ ` — Path to RBS signatures directory (relative to root)
+`⟨root                    : String⟩ ` — Root directory of the project (defaults to current directory)
+`⟨source_path             : String⟩ ` — Source directory to document (relative to root)
+`⟨spec_path               : String⟩ ` — Path to test directory (relative to root)
+`⟨verbose                 : Boolean⟩` — Verbose output during generation
+
 ## Methods
 
-### root
+### Config.new
 
-→ String — Root directory of the project (defaults to current directory)
-
-
-```ruby
-def root
-  @root
-end
-```
-
-
----
-### root=(...)
-
-⟨value : untyped⟩
-→ String — Root directory of the project (defaults to current directory)
-
-
-```ruby
-def root=(value)
-  @root = value
-end
-```
-
-
----
-### source_path
-
-→ String — Source directory to document (relative to root)
-
-
-```ruby
-def source_path
-  @source_path
-end
-```
-
-
----
-### source_path=(...)
-
-⟨value : untyped⟩
-→ String — Source directory to document (relative to root)
-
-
-```ruby
-def source_path=(value)
-  @source_path = value
-end
-```
-
-
----
-### output
-
-→ String — Output directory for generated docs
-
-
-```ruby
-def output
-  @output
-end
-```
-
-
----
-### output=(...)
-
-⟨value : untyped⟩
-→ String — Output directory for generated docs
-
-
-```ruby
-def output=(value)
-  @output = value
-end
-```
-
-
----
-### namespace_filter
-
-→ String — Namespace prefix to filter (e.g., "MyProject::")
-Only classes/modules starting with this prefix are documented.
-If nil, all classes are included.
-
-
-```ruby
-def namespace_filter
-  @namespace_filter
-end
-```
-
-
----
-### namespace_filter=(...)
-
-⟨value : untyped⟩
-→ String — Namespace prefix to filter (e.g., "MyProject::")
-Only classes/modules starting with this prefix are documented.
-If nil, all classes are included.
-
-
-```ruby
-def namespace_filter=(value)
-  @namespace_filter = value
-end
-```
+⟶ `Config` — A new instance of Config
 
 
 ---
 ### namespace_strip
-*Namespace prefix to strip from output paths.
-Defaults to namespace_filter if not explicitly set.*
+Namespace prefix to strip from output paths.
+Defaults to namespace_filter if not explicitly set.
 
 ```ruby
-def namespace_strip
-  @namespace_strip
-end
+# lib/chiridion/config.rb : ~86
+def namespace_strip = @namespace_strip || @namespace_filter
 ```
-
-
----
-### namespace_strip=(...)
-
-⟨value : untyped⟩
-→ String — Namespace prefix to strip from output paths
-Defaults to namespace_filter value.
-
-
-```ruby
-def namespace_strip=(value)
-  @namespace_strip = value
-end
-```
-
-
----
-### github_repo
-
-→ String — GitHub repository for source links (e.g., "user/repo")
-
-
-```ruby
-def github_repo
-  @github_repo
-end
-```
-
-
----
-### github_repo=(...)
-
-⟨value : untyped⟩
-→ String — GitHub repository for source links (e.g., "user/repo")
-
-
-```ruby
-def github_repo=(value)
-  @github_repo = value
-end
-```
-
-
----
-### github_branch
-
-→ String — Git branch for source links
-
-
-```ruby
-def github_branch
-  @github_branch
-end
-```
-
-
----
-### github_branch=(...)
-
-⟨value : untyped⟩
-→ String — Git branch for source links
-
-
-```ruby
-def github_branch=(value)
-  @github_branch = value
-end
-```
-
-
----
-### include_specs
-
-→ Boolean — Whether to extract examples from spec files
-
-
-```ruby
-def include_specs
-  @include_specs
-end
-```
-
-
----
-### include_specs=(...)
-
-⟨value : untyped⟩
-→ Boolean — Whether to extract examples from spec files
-
-
-```ruby
-def include_specs=(value)
-  @include_specs = value
-end
-```
-
-
----
-### spec_path
-
-→ String — Path to test directory (relative to root)
-
-
-```ruby
-def spec_path
-  @spec_path
-end
-```
-
-
----
-### spec_path=(...)
-
-⟨value : untyped⟩
-→ String — Path to test directory (relative to root)
-
-
-```ruby
-def spec_path=(value)
-  @spec_path = value
-end
-```
-
-
----
-### rbs_path
-
-→ String — Path to RBS signatures directory (relative to root)
-
-
-```ruby
-def rbs_path
-  @rbs_path
-end
-```
-
-
----
-### rbs_path=(...)
-
-⟨value : untyped⟩
-→ String — Path to RBS signatures directory (relative to root)
-
-
-```ruby
-def rbs_path=(value)
-  @rbs_path = value
-end
-```
-
-
----
-### verbose
-
-→ Boolean — Verbose output during generation
-
-
-```ruby
-def verbose
-  @verbose
-end
-```
-
-
----
-### verbose=(...)
-
-⟨value : untyped⟩
-→ Boolean — Verbose output during generation
-
-
-```ruby
-def verbose=(value)
-  @verbose = value
-end
-```
-
-
----
-### logger
-
-→ #info — Logger for output messages
-
-
-```ruby
-def logger
-  @logger
-end
-```
-
-
----
-### logger=(...)
-
-⟨value : untyped⟩
-→ #info — Logger for output messages
-
-
-```ruby
-def logger=(value)
-  @logger = value
-end
-```
-
-
----
-### inline_source_threshold
-
-→ Integer — Maximum body lines for inline source display.
-Methods with body <= this many lines show their implementation inline.
-Set to nil or 0 to disable inline source. Default: 10.
-
-
-```ruby
-def inline_source_threshold
-  @inline_source_threshold
-end
-```
-
-
----
-### inline_source_threshold=(...)
-
-⟨value : untyped⟩
-→ Integer — Maximum body lines for inline source display.
-Methods with body <= this many lines show their implementation inline.
-Set to nil or 0 to disable inline source. Default: 10.
-
-
-```ruby
-def inline_source_threshold=(value)
-  @inline_source_threshold = value
-end
-```
-
-
----
-### Config.new
-
-→ Config — a new instance of Config
 
 
 ---
 ### load_file(...)
-*Load configuration from a YAML file.*
+Load configuration from a YAML file.
 
-⟨path : String⟩ → Path to YAML configuration file
-→ Config — self
+`⟨path : String⟩` — Path to YAML configuration file
+⟶ `Config       ` — Self
 
 
 ```ruby
+# lib/chiridion/config.rb : ~92
 def load_file(path)
   return self unless File.exist?(path)
 
@@ -431,13 +100,14 @@ end
 
 ---
 ### load_hash(...)
-*Load configuration from a hash.*
+Load configuration from a hash.
 
-⟨data : Hash⟩ → Configuration values
-→ Config — self
+`⟨data : Hash⟩` — Configuration values
+⟶ `Config     ` — Self
 
 
 ```ruby
+# lib/chiridion/config.rb : ~104
 def load_hash(data)
   data.each do |key, value|
     setter = :"#{key}="
@@ -451,10 +121,11 @@ end
 ---
 ### full_source_path
 
-→ String — Full path to source directory
+⟶ `String` — Full path to source directory
 
 
 ```ruby
+# lib/chiridion/config.rb : ~113
 def full_source_path = File.join(root, source_path)
 ```
 
@@ -462,10 +133,11 @@ def full_source_path = File.join(root, source_path)
 ---
 ### full_output_path
 
-→ String — Full path to output directory
+⟶ `String` — Full path to output directory
 
 
 ```ruby
+# lib/chiridion/config.rb : ~116
 def full_output_path = File.join(root, output)
 ```
 
@@ -473,10 +145,11 @@ def full_output_path = File.join(root, output)
 ---
 ### full_spec_path
 
-→ String — Full path to spec directory
+⟶ `String` — Full path to spec directory
 
 
 ```ruby
+# lib/chiridion/config.rb : ~119
 def full_spec_path = File.join(root, spec_path)
 ```
 
@@ -484,9 +157,10 @@ def full_spec_path = File.join(root, spec_path)
 ---
 ### full_rbs_path
 
-→ String — Full path to RBS directory
+⟶ `String` — Full path to RBS directory
 
 
 ```ruby
+# lib/chiridion/config.rb : ~122
 def full_rbs_path = File.join(root, rbs_path)
 ```

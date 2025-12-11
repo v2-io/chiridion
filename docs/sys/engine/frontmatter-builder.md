@@ -1,5 +1,5 @@
 ---
-generated: 2025-12-10T22:33:19Z
+generated: 2025-12-11T22:51:37Z
 title: Chiridion::Engine::FrontmatterBuilder
 type: class
 source: lib/chiridion/engine/frontmatter_builder.rb:16
@@ -28,17 +28,20 @@ file gets frontmatter that enables:
 
 
 
+
+
 ## Methods
 
 ### FrontmatterBuilder.new(...)
 
-⟨class_linker    : untyped⟩
-⟨namespace_strip : untyped = nil⟩
-⟨project_title   : untyped = "API Documentation"⟩
-→ FrontmatterBuilder — a new instance of FrontmatterBuilder
+`⟨class_linker   ⟩                      `
+`⟨namespace_strip = nil⟩                `
+`⟨project_title   = "API Documentation"⟩`
+⟶ `FrontmatterBuilder                   ` — A new instance of FrontmatterBuilder
 
 
 ```ruby
+# lib/chiridion/engine/frontmatter_builder.rb : ~17
 def initialize(class_linker, namespace_strip: nil, project_title: "API Documentation")
   @class_linker         = class_linker
   @namespace_strip      = namespace_strip
@@ -50,15 +53,16 @@ end
 
 ---
 ### register_inheritance(...)
-*Pre-compute inheritance relationships from full structure.
+Pre-compute inheritance relationships from full structure.
 
 Must be called before build() to populate inherited-by fields.
-Scans all classes to build parent->children mapping.*
+Scans all classes to build parent->children mapping.
 
-⟨structure : Hash⟩ → Full documentation structure from Extractor
+`⟨structure : Hash⟩` — Full documentation structure from Extractor
 
 
 ```ruby
+# lib/chiridion/engine/frontmatter_builder.rb : ~30
 def register_inheritance(structure)
   @inheritance_children = {}
   structure[:classes].each do |klass|
@@ -74,20 +78,21 @@ end
 
 ---
 ### build(...)
-*Build frontmatter hash for a class or module.*
+Build frontmatter hash for a class or module.
 
-⟨obj : Hash⟩ → Extracted object data from Extractor
-→ Hash — Frontmatter fields in render order
+`⟨obj : Hash⟩` — Extracted object data from Extractor
+⟶ `Hash      ` — Frontmatter fields in render order
 
 
 ---
 ### build_index
-*Build frontmatter for index page.*
+Build frontmatter for index page.
 
-→ Hash — Minimal frontmatter for index
+⟶ `Hash` — Minimal frontmatter for index
 
 
 ```ruby
+# lib/chiridion/engine/frontmatter_builder.rb : ~69
 def build_index
   {
     generated: Time.now.utc.iso8601,
@@ -96,3 +101,7 @@ def build_index
   }
 end
 ```
+
+---
+
+**Private:** `#build_aliases`:185, `#build_constant_list`:151, `#build_inherited_by_links`:136, `#build_inherits_link`:129, `#build_method_list`:158, `#build_mixin_list`:144, `#build_parent_link`:107, `#build_related`:192, `#build_tags`:178, `#documentable_class?`:79, `#extract_description`:86, `#format_method_name`:175, `#linkify_class`:222, `#relative_path`:233, `#to_kebab_case`:240

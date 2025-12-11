@@ -1,5 +1,5 @@
 ---
-generated: 2025-12-10T22:33:19Z
+generated: 2025-12-11T22:51:37Z
 title: Chiridion::Engine::RbsTypeAliasLoader
 type: class
 source: lib/chiridion/engine/rbs_type_alias_loader.rb:22
@@ -40,17 +40,20 @@ type_aliases = loader.load
 
 
 
+
+
 ## Methods
 
 ### RbsTypeAliasLoader.new(...)
 
-⟨verbose : untyped⟩
-⟨logger  : untyped⟩
-⟨rbs_dir : untyped = nil⟩
-→ RbsTypeAliasLoader — a new instance of RbsTypeAliasLoader
+`⟨verbose⟩           `
+`⟨logger ⟩           `
+`⟨rbs_dir = nil⟩     `
+⟶ `RbsTypeAliasLoader` — A new instance of RbsTypeAliasLoader
 
 
 ```ruby
+# lib/chiridion/engine/rbs_type_alias_loader.rb : ~23
 def initialize(verbose, logger, rbs_dir: nil)
   @verbose = verbose
   @logger  = logger
@@ -61,6 +64,10 @@ end
 
 ---
 ### load
-*Extract type aliases from generated RBS files.*
+Extract type aliases from generated RBS files.
 
-→ Hash{String =] Array[Hash]} — namespace -> array of type definitions
+⟶ `Hash{String =] Array[Hash]}` — Namespace -> array of type definitions
+
+---
+
+**Private:** `#parse_rbs_file`:55

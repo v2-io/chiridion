@@ -1,7 +1,7 @@
 {%- comment -%}Class/module document template.{%- endcomment -%}
 # {{ title }}
 
-{{ docstring }}
+{{ docstring | normalize_headers: 3 }}
 {%- if mixins %}
 
 {{ mixins }}
@@ -37,6 +37,10 @@
 {%- if types_section != blank %}
 
 {{ types_section }}
+{%- endif -%}
+{%- if attributes_section != blank %}
+
+{{ attributes_section }}
 {%- endif -%}
 {%- if methods_section != blank %}
 

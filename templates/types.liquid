@@ -5,9 +5,7 @@
 
 ---
 ### {{ type.name }}
-{%- if type.description %}
-(*{{ type.description }}*)
-
-{% endif -%}
+{% if type.description %}(*{{ type.description }}*)
+{% endif %}
 `{{ type.definition }}`
 {%- endfor -%}

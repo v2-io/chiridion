@@ -1,5 +1,5 @@
 ---
-generated: 2025-12-10T21:43:10Z
+generated: 2025-12-11T22:51:37Z
 title: Chiridion::Engine::Writer
 type: class
 source: lib/chiridion/engine/writer.rb:11
@@ -23,35 +23,42 @@ only timestamps have changed but content is identical.
 
 
 
+
+
 ## Methods
 
 ### Writer.new(...)
 
-⟨output                  : untyped⟩
-⟨namespace_strip         : untyped⟩
-⟨include_specs           : untyped⟩
-⟨verbose                 : untyped⟩
-⟨logger                  : untyped⟩
-⟨root                    : untyped = Dir.pwd⟩
-⟨github_repo             : untyped = nil⟩
-⟨github_branch           : untyped = "main"⟩
-⟨project_title           : untyped = "API Documentation"⟩
-⟨index_description       : untyped = nil⟩
-⟨inline_source_threshold : untyped = 10⟩
-→ Writer — a new instance of Writer
+`⟨output                 ⟩                      `
+`⟨namespace_strip        ⟩                      `
+`⟨include_specs          ⟩                      `
+`⟨verbose                ⟩                      `
+`⟨logger                 ⟩                      `
+`⟨root                    = Dir.pwd⟩            `
+`⟨github_repo             = nil⟩                `
+`⟨github_branch           = "main"⟩             `
+`⟨project_title           = "API Documentation"⟩`
+`⟨index_description       = nil⟩                `
+`⟨inline_source_threshold = 10⟩                 `
+⟶ `Writer                                       ` — A new instance of Writer
 
 
 ---
 ### write(...)
-*Write all documentation files.*
+Write all documentation files.
 
-⟨structure : Hash⟩ → Documentation structure from Extractor
+`⟨structure : Hash⟩` — Documentation structure from Extractor
 
 
 ```ruby
+# lib/chiridion/engine/writer.rb : ~45
 def write(structure)
   FileUtils.mkdir_p(@output)
   written, skipped = write_all_files(structure)
   @logger.info "  #{written} files written, #{skipped} unchanged"
 end
 ```
+
+---
+
+**Private:** `#content_changed?`:108, `#normalize`:110, `#output_path`:117, `#to_kebab_case`:124, `#write_all_files`:53, `#write_file`:98, `#write_index`:73, `#write_object`:87, `#write_objects`:79, `#write_type_aliases`:63

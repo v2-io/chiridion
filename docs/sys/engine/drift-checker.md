@@ -1,5 +1,5 @@
 ---
-generated: 2025-12-10T22:33:19Z
+generated: 2025-12-11T22:51:37Z
 title: Chiridion::Engine::DriftChecker
 type: class
 source: lib/chiridion/engine/drift_checker.rb:9
@@ -23,31 +23,34 @@ Useful in CI pipelines to enforce documentation currency.
 
 
 
+
+
 ## Methods
 
 ### DriftChecker.new(...)
 
-⟨output                  : untyped⟩
-⟨namespace_strip         : untyped⟩
-⟨include_specs           : untyped⟩
-⟨verbose                 : untyped⟩
-⟨logger                  : untyped⟩
-⟨root                    : untyped = Dir.pwd⟩
-⟨github_repo             : untyped = nil⟩
-⟨github_branch           : untyped = "main"⟩
-⟨project_title           : untyped = "API Documentation"⟩
-⟨inline_source_threshold : untyped = 10⟩
-→ DriftChecker — a new instance of DriftChecker
+`⟨output                 ⟩                      `
+`⟨namespace_strip        ⟩                      `
+`⟨include_specs          ⟩                      `
+`⟨verbose                ⟩                      `
+`⟨logger                 ⟩                      `
+`⟨root                    = Dir.pwd⟩            `
+`⟨github_repo             = nil⟩                `
+`⟨github_branch           = "main"⟩             `
+`⟨project_title           = "API Documentation"⟩`
+`⟨inline_source_threshold = 10⟩                 `
+⟶ `DriftChecker                                 ` — A new instance of DriftChecker
 
 
 ---
 ### check(...)
-*Check for drift between source and existing documentation.*
+Check for drift between source and existing documentation.
 
-⟨structure : Hash⟩ → Documentation structure from Extractor
+`⟨structure : Hash⟩` — Documentation structure from Extractor
 
 
 ```ruby
+# lib/chiridion/engine/drift_checker.rb : ~42
 def check(structure)
   @renderer.register_classes(structure)
 
@@ -61,3 +64,7 @@ def check(structure)
   report_results(drifted, missing, orphaned)
 end
 ```
+
+---
+
+**Private:** `#check_file`:73, `#check_index`:57, `#check_objects`:63, `#content_changed?`:96, `#find_orphaned_files`:82, `#normalize`:98, `#output_path`:131, `#report_list`:124, `#report_results`:105, `#to_kebab_case`:138

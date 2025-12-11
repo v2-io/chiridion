@@ -1,5 +1,5 @@
 ---
-generated: 2025-12-10T21:43:10Z
+generated: 2025-12-11T22:34:06Z
 title: Chiridion::Engine::TemplateRenderer::Filters
 type: module
 source: lib/chiridion/engine/template_renderer.rb:19
@@ -22,12 +22,13 @@ Custom Liquid filters for documentation rendering.
 ## Methods
 
 ### escape_pipes(...)
-*Escape pipe characters for markdown table cells.*
+Escape pipe characters for markdown table cells.
 
-⟨input : untyped⟩
+`⟨input⟩`
 
 
 ```ruby
+# lib/chiridion/engine/template_renderer.rb : ~21
 def escape_pipes(input)
   return "" if input.nil?
 
@@ -38,12 +39,13 @@ end
 
 ---
 ### strip_newlines(...)
-*Remove newlines for single-line table cells.*
+Remove newlines for single-line table cells.
 
-⟨input : untyped⟩
+`⟨input⟩`
 
 
 ```ruby
+# lib/chiridion/engine/template_renderer.rb : ~28
 def strip_newlines(input)
   return "" if input.nil?
 
@@ -54,12 +56,13 @@ end
 
 ---
 ### kebab_case(...)
-*Convert to kebab case for file paths.*
+Convert to kebab case for file paths.
 
-⟨input : untyped⟩
+`⟨input⟩`
 
 
 ```ruby
+# lib/chiridion/engine/template_renderer.rb : ~35
 def kebab_case(input)
   return "" if input.nil?
 

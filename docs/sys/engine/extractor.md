@@ -1,5 +1,5 @@
 ---
-generated: 2025-12-10T22:33:19Z
+generated: 2025-12-11T22:51:37Z
 title: Chiridion::Engine::Extractor
 type: class
 source: lib/chiridion/engine/extractor.rb:10
@@ -24,20 +24,23 @@ Merges RBS type signatures when available.
 
 
 
+
+
 ## Methods
 
 ### Extractor.new(...)
 
-⟨rbs_types           : untyped⟩
-⟨spec_examples       : untyped⟩
-⟨namespace_filter    : untyped⟩
-⟨logger              : untyped = nil⟩
-⟨rbs_file_namespaces : untyped = {}⟩
-⟨type_aliases        : untyped = {}⟩
-→ Extractor — a new instance of Extractor
+`⟨rbs_types          ⟩      `
+`⟨spec_examples      ⟩      `
+`⟨namespace_filter   ⟩      `
+`⟨logger              = nil⟩`
+`⟨rbs_file_namespaces = {}⟩ `
+`⟨type_aliases        = {}⟩ `
+⟶ `Extractor                ` — A new instance of Extractor
 
 
 ```ruby
+# lib/chiridion/engine/extractor.rb : ~11
 def initialize(rbs_types, spec_examples, namespace_filter, logger = nil, rbs_file_namespaces: {},
                type_aliases: {})
   @rbs_types           = rbs_types
@@ -54,8 +57,12 @@ end
 
 ---
 ### extract(...)
-*Extract documentation structure from YARD registry.*
+Extract documentation structure from YARD registry.
 
-⟨registry      : YARD::Registry⟩ → Parsed YARD registry
-⟨source_filter : untyped = nil⟩
-→ Hash — Structure with :namespaces, :classes, :modules keys
+`⟨registry      : YARD::Registry⟩` — Parsed YARD registry
+`⟨source_filter = nil⟩           `
+⟶ `Hash                          ` — Structure with :namespaces, :classes, :modules keys
+
+---
+
+**Private:** `#build_type_alias_lookup`:262, `#clean_docstring`:112, `#collect_referenced_types`:274, `#compute_end_line`:83, `#condense_attr_source`:220, `#extract_constants`:106, `#extract_method`:146, `#extract_methods`:121, `#extract_object`:53, `#extract_params`:172, `#extract_private_methods`:134, `#extract_return`:182, `#extract_see_tags`:81, `#extract_source`:198, `#extract_type_names`:297, `#find_rbs_file`:252, `#lookup_spec_data`:245, `#method_spec_behaviors`:243, `#method_spec_examples`:241, `#needs_regeneration?`:89, `#should_document?`:47, `#to_snake_case`:258

@@ -90,6 +90,8 @@ Metrics/AbcSize:
 
 Metrics/CyclomaticComplexity:
   Max: 20
+  Exclude:
+    - "lib/chiridion/engine/inline_rbs_loader.rb"
 
 Metrics/PerceivedComplexity:
   Max: 15
@@ -97,7 +99,7 @@ Metrics/PerceivedComplexity:
     - "lib/chiridion/engine/inline_rbs_loader.rb"
 
 Metrics/ClassLength:
-  Max: 300
+  Max: 350
   CountAsOne:
     - array
     - hash

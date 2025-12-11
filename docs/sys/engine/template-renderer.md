@@ -1,5 +1,5 @@
 ---
-generated: 2025-12-10T22:33:19Z
+generated: 2025-12-11T22:51:37Z
 title: Chiridion::Engine::TemplateRenderer
 type: class
 source: lib/chiridion/engine/template_renderer.rb:17
@@ -29,15 +29,18 @@ Available templates:
 
 
 
+
+
 ## Methods
 
 ### TemplateRenderer.new(...)
 
-⟨templates_path : untyped = nil⟩
-→ TemplateRenderer — a new instance of TemplateRenderer
+`⟨templates_path = nil⟩`
+⟶ `TemplateRenderer    ` — A new instance of TemplateRenderer
 
 
 ```ruby
+# lib/chiridion/engine/template_renderer.rb : ~46
 def initialize(templates_path: nil)
   @templates_path = templates_path || default_templates_path
   @templates      = {}
@@ -50,16 +53,17 @@ end
 
 ---
 ### render_index(...)
-*Render the index template.*
+Render the index template.
 
-⟨title       : untyped⟩
-⟨description : untyped⟩
-⟨classes     : untyped⟩
-⟨modules     : untyped⟩
-→ String — Rendered markdown
+`⟨title      ⟩`
+`⟨description⟩`
+`⟨classes    ⟩`
+`⟨modules    ⟩`
+⟶ `String     ` — Rendered markdown
 
 
 ```ruby
+# lib/chiridion/engine/template_renderer.rb : ~61
 def render_index(title:, description:, classes:, modules:)
   render("index", {
            "title"       => title,
@@ -73,45 +77,47 @@ end
 
 ---
 ### render_document(...)
-*Render a class or module document.*
+Render a class or module document.
 
-⟨title             : untyped⟩
-⟨docstring         : untyped⟩
-⟨mixins            : untyped = nil⟩
-⟨examples          : untyped = []⟩
-⟨spec_examples     : untyped = nil⟩
-⟨see_also          : untyped = nil⟩
-⟨constants_section : untyped = ""⟩
-⟨types_section     : untyped = ""⟩
-⟨methods_section   : untyped = ""⟩
-→ String — Rendered markdown
+`⟨title             ⟩      `
+`⟨docstring         ⟩      `
+`⟨mixins             = nil⟩`
+`⟨examples           = []⟩ `
+`⟨spec_examples      = nil⟩`
+`⟨see_also           = nil⟩`
+`⟨constants_section  = ""⟩ `
+`⟨types_section      = ""⟩ `
+`⟨attributes_section = ""⟩ `
+`⟨methods_section    = ""⟩ `
+⟶ `String                  ` — Rendered markdown
 
 
 ---
 ### render_method(...)
-*Render a single method.*
+Render a single method.
 
-⟨display_name  : untyped⟩
-⟨has_params    : untyped = false⟩
-⟨docstring     : untyped = nil⟩
-⟨params        : untyped = []⟩
-⟨return_line   : untyped = nil⟩
-⟨examples      : untyped = []⟩
-⟨behaviors     : untyped = []⟩
-⟨spec_examples : untyped = []⟩
-⟨inline_source : untyped = nil⟩
-→ String — Rendered markdown
+`⟨display_name ⟩        `
+`⟨has_params    = false⟩`
+`⟨docstring     = nil⟩  `
+`⟨params        = []⟩   `
+`⟨return_line   = nil⟩  `
+`⟨examples      = []⟩   `
+`⟨behaviors     = []⟩   `
+`⟨spec_examples = []⟩   `
+`⟨inline_source = nil⟩  `
+⟶ `String               ` — Rendered markdown
 
 
 ---
 ### render_methods(...)
-*Render the methods section with separators.*
+Render the methods section with separators.
 
-⟨methods : untyped⟩
-→ String — Rendered markdown
+`⟨methods⟩`
+⟶ `String ` — Rendered markdown
 
 
 ```ruby
+# lib/chiridion/engine/template_renderer.rb : ~149
 def render_methods(methods:) = render("methods", {
   "methods" => methods
 })
@@ -120,14 +126,15 @@ def render_methods(methods:) = render("methods", {
 
 ---
 ### render_constants(...)
-*Render the constants section.*
+Render the constants section.
 
-⟨constants         : untyped⟩
-⟨complex_constants : untyped⟩
-→ String — Rendered markdown
+`⟨constants        ⟩`
+`⟨complex_constants⟩`
+⟶ `String           ` — Rendered markdown
 
 
 ```ruby
+# lib/chiridion/engine/template_renderer.rb : ~158
 def render_constants(constants:, complex_constants:)
   render("constants", {
            "constants"         => stringify_keys(constants),
@@ -139,13 +146,14 @@ end
 
 ---
 ### render_types(...)
-*Render the types section (type aliases used by a class/module).*
+Render the types section (type aliases used by a class/module).
 
-⟨types : untyped⟩
-→ String — Rendered markdown
+`⟨types⟩ `
+⟶ `String` — Rendered markdown
 
 
 ```ruby
+# lib/chiridion/engine/template_renderer.rb : ~169
 def render_types(types:) = render("types", {
   "types" => stringify_keys(types)
 })
@@ -154,15 +162,16 @@ def render_types(types:) = render("types", {
 
 ---
 ### render_type_aliases(...)
-*Render the type aliases reference page.*
+Render the type aliases reference page.
 
-⟨title       : untyped⟩
-⟨description : untyped⟩
-⟨namespaces  : untyped⟩
-→ String — Rendered markdown
+`⟨title      ⟩`
+`⟨description⟩`
+`⟨namespaces ⟩`
+⟶ `String     ` — Rendered markdown
 
 
 ```ruby
+# lib/chiridion/engine/template_renderer.rb : ~179
 def render_type_aliases(title:, description:, namespaces:)
   render("type_aliases", {
            "title"       => title,
@@ -171,3 +180,7 @@ def render_type_aliases(title:, description:, namespaces:)
          })
 end
 ```
+
+---
+
+**Private:** `#default_templates_path`:189, `#load_template`:196, `#render`:191, `#stringify_keys`:206

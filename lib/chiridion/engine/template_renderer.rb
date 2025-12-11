@@ -41,6 +41,45 @@ module Chiridion
                .gsub(/([a-z\d])([A-Z])/, '\1-\2')
                .downcase
         end
+
+        # Strip @rbs! blocks from docstrings (type metadata shouldn't be in docs).
+        def strip_rbs_blocks(input)
+          return "" if input.nil?
+
+          input.to_s.gsub(/@rbs![\s\S]*?(?=\n\n|\z)/, "").strip
+        end
+
+        # Normalize markdown headers to be subordinate to a given level.
+        # Usage: {{ docstring | normalize_headers: 4 }}
+        # Adjusts all headers so the minimum level becomes the specified level.
+        def normalize_headers(input, min_level = 3)
+          return "" if input.nil? || input.to_s.empty?
+
+          text  = input.to_s
+          lines = text.lines
+
+          # Find the minimum header level in the text
+          header_levels = lines.filter_map do |line|
+            match = line.match(/^(#+)\s/)
+            match[1].length if match
+          end
+
+          return text if header_levels.empty?
+
+          current_min = header_levels.min
+          offset      = min_level.to_i - current_min
+          return text if offset <= 0
+
+          # Prepend offset number of # to all header lines
+          prefix = "#" * offset
+          lines.map do |line|
+            if line.match?(/^#+\s/)
+              prefix + line
+            else
+              line
+            end
+          end.join
+        end
       end
 
       def initialize(templates_path: nil)
@@ -77,6 +116,7 @@ module Chiridion
       # @param see_also [String, nil] See also links
       # @param constants_section [String] Rendered constants section
       # @param types_section [String] Rendered types section (type aliases used by this class)
+      # @param attributes_section [String] Rendered attributes section
       # @param methods_section [String] Rendered methods section
       # @return [String] Rendered markdown
       def render_document(
@@ -88,18 +128,20 @@ module Chiridion
         see_also: nil,
         constants_section: "",
         types_section: "",
+        attributes_section: "",
         methods_section: ""
       )
         render("document", {
-                 "title"             => title,
-                 "docstring"         => docstring,
-                 "mixins"            => mixins,
-                 "examples"          => stringify_keys(examples),
-                 "spec_examples"     => spec_examples,
-                 "see_also"          => see_also,
-                 "constants_section" => constants_section,
-                 "types_section"     => types_section,
-                 "methods_section"   => methods_section
+                 "title"              => title,
+                 "docstring"          => docstring,
+                 "mixins"             => mixins,
+                 "examples"           => stringify_keys(examples),
+                 "spec_examples"      => spec_examples,
+                 "see_also"           => see_also,
+                 "constants_section"  => constants_section,
+                 "types_section"      => types_section,
+                 "attributes_section" => attributes_section,
+                 "methods_section"    => methods_section
                })
       end
 

@@ -1,5 +1,5 @@
 ---
-generated: 2025-12-10T22:33:19Z
+generated: 2025-12-11T22:51:37Z
 title: Chiridion::Engine::TypeMerger
 type: class
 source: lib/chiridion/engine/type_merger.rb:10
@@ -30,31 +30,35 @@ reflects the actual type contracts defined in sig/*.rbs.
 
 
 
+
+
 ## Methods
 
 ### TypeMerger.new(...)
 
-⟨logger : untyped = nil⟩
-→ TypeMerger — a new instance of TypeMerger
+`⟨logger = nil⟩`
+⟶ `TypeMerger  ` — A new instance of TypeMerger
 
 
 ```ruby
+# lib/chiridion/engine/type_merger.rb : ~15
 def initialize(logger = nil) = @logger = logger
 ```
 
 
 ---
 ### merge_params(...)
-*Merge YARD params with RBS types - RBS is authoritative.*
+Merge YARD params with RBS types - RBS is authoritative.
 
-⟨yard_params : Array[Hash]⟩ → Parameters from YARD
-⟨rbs_data    : Hash⟩ → RBS signature data
-⟨class_path  : String⟩ → Class path for warnings
-⟨method_name : Symbol⟩ → Method name for warnings
-→ Array[Hash] — Merged parameters
+`⟨yard_params : Array[Hash]⟩` — Parameters from YARD
+`⟨rbs_data    : Hash⟩       ` — RBS signature data
+`⟨class_path  : String⟩     ` — Class path for warnings
+`⟨method_name : Symbol⟩     ` — Method name for warnings
+⟶ `Array[Hash]              ` — Merged parameters
 
 
 ```ruby
+# lib/chiridion/engine/type_merger.rb : ~24
 def merge_params(yard_params, rbs_data, class_path, method_name)
   return yard_params unless rbs_data&.dig(:params)
 
@@ -66,26 +70,14 @@ end
 
 ---
 ### merge_return(...)
-*Merge YARD return with RBS return type - RBS is authoritative.*
+Merge YARD return with RBS return type - RBS is authoritative.
 
-⟨yard_return : Hash⟩ → Return info from YARD
-⟨rbs_data    : Hash⟩ → RBS signature data
-⟨class_path  : String⟩ → Class path for warnings
-⟨method_name : Symbol⟩ → Method name for warnings
-→ Hash — Merged return info
+`⟨yard_return : Hash⟩  ` — Return info from YARD
+`⟨rbs_data    : Hash⟩  ` — RBS signature data
+`⟨class_path  : String⟩` — Class path for warnings
+`⟨method_name : Symbol⟩` — Method name for warnings
+⟶ `Hash                ` — Merged return info
 
+---
 
-```ruby
-def merge_return(yard_return, rbs_data, class_path, method_name)
-  return yard_return unless rbs_data&.dig(:returns)
-
-  rbs_return = rbs_data[:returns]
-
-  if yard_return
-    check_return_mismatch(yard_return, rbs_return, class_path, method_name)
-    yard_return.merge(types: [rbs_return])
-  else
-    { types: [rbs_return], text: nil }
-  end
-end
-```
+**Private:** `#check_param_mismatch`:83, `#check_return_mismatch`:90, `#clean_param_name`:81, `#equivalent_types?`:109, `#exact_or_prefix_match?`:107, `#merge_description`:74, `#merge_single_param`:58, `#normalize_type`:116, `#types_compatible?`:98, `#warn_mismatch`:118

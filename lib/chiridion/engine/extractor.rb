@@ -66,6 +66,7 @@ module Chiridion
           examples:           needs_regen ? obj.tags(:example).map { |t| { name: t.name, text: t.text } } : [],
           see_also:           needs_regen ? extract_see_tags(obj) : [],
           methods:            methods,
+          private_methods:    needs_regen ? extract_private_methods(obj) : [],
           constants:          needs_regen ? extract_constants(obj, path) : [],
           includes:           obj.instance_mixins.map(&:path),
           extends:            obj.class_mixins.map(&:path),
@@ -129,6 +130,19 @@ module Chiridion
         class_methods + instance_methods
       end
 
+      # Extract minimal info for private methods (for summary display).
+      def extract_private_methods(obj)
+        private_instance = obj.meths(scope: :instance, visibility: :private).map do |m|
+          { name: m.name, scope: :instance, line: m.line }
+        end
+
+        private_class = obj.meths(scope: :class, visibility: :private).map do |m|
+          { name: m.name, scope: :class, line: m.line }
+        end
+
+        private_class + private_instance
+      end
+
       def extract_method(meth, class_path, scope)
         rbs_data    = @rbs_types.dig(class_path, meth.name.to_s)
         yard_params = extract_params(meth)
@@ -148,7 +162,10 @@ module Chiridion
           spec_examples:     method_spec_examples(class_path, meth.name),
           spec_behaviors:    method_spec_behaviors(class_path, meth.name),
           source:            source_info[:source],
-          source_body_lines: source_info[:body_lines]
+          source_body_lines: source_info[:body_lines],
+          attr_type:         source_info[:attr_type],
+          file:              meth.file,
+          line:              meth.line
         }
       end
 
@@ -172,20 +189,53 @@ module Chiridion
       # YARD's meth.source includes the full method including def/end.
       # Body lines = total lines minus def line and end line.
       # For one-liners like `def foo = bar`, body_lines is 0 (inline expression).
+      #
+      # Condenses attr_reader/attr_writer expansions to one-liner syntax:
+      #   def foo; @foo; end  → def foo = @foo
+      #   def foo=(v); @foo = v; end  → def foo=(v) = (@foo = v)
+      #
+      # Returns hash with :source, :body_lines, and :attr_type (:reader/:writer/nil)
       def extract_source(meth)
         source = meth.source
-        return { source: nil, body_lines: nil } unless source
+        return { source: nil, body_lines: nil, attr_type: nil } unless source
+
+        # Try to condense attr_* expansions to one-liners
+        condensed = condense_attr_source(source)
+        return { source: condensed[:source], body_lines: 0, attr_type: condensed[:attr_type] } if condensed
 
         lines = source.lines
         total = lines.size
 
         # One-liner methods (def foo = ...) have no separate body
         if total == 1 || source.match?(/\Adef\s+\S+.*=/)
-          { source: source, body_lines: 0 }
+          { source: source, body_lines: 0, attr_type: nil }
         else
           # Subtract def line (1) and end line (1) = body lines
-          { source: source, body_lines: [total - 2, 0].max }
+          { source: source, body_lines: [total - 2, 0].max, attr_type: nil }
         end
+      end
+
+      # Detect and condense attr_reader/attr_writer expanded methods.
+      # Returns { source: String, attr_type: Symbol } or nil if not an attr_* pattern.
+      def condense_attr_source(source)
+        lines = source.lines.map(&:strip)
+        return nil unless lines.size == 3 && lines.last == "end"
+
+        # attr_reader pattern: def foo; @foo; end
+        if (reader_match = lines[0].match(/\Adef\s+(\w+)\z/)) && (ivar_match = lines[1].match(/\A@(\w+)\z/))
+          return { source: "def #{reader_match[1]} = @#{ivar_match[1]}", attr_type: :reader }
+        end
+
+        # attr_writer pattern: def foo=(val); @foo = val; end
+        if (writer_match = lines[0].match(/\Adef\s+(\w+)=\((\w+)\)\z/)) &&
+           (assign_match = lines[1].match(/\A@(\w+)\s*=\s*(\w+)\z/))
+          method_name = writer_match[1]
+          param_name  = writer_match[2]
+          ivar_name   = assign_match[1]
+          return { source: "def #{method_name}=(#{param_name}) = (@#{ivar_name} = #{param_name})", attr_type: :writer }
+        end
+
+        nil
       end
 
       def method_spec_examples(class_path, method_name) = lookup_spec_data(class_path, :method_examples, method_name)
