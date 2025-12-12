@@ -1,0 +1,43 @@
+{%- comment -%}Method documentation template.{%- endcomment -%}
+### {{ display_name }}{% if has_params %}(...){% endif %}
+{%- if docstring %}
+{{ docstring | normalize_headers: 4 }}
+{%- endif -%}
+{%- if params.size > 0 or return_line %}
+
+{% for param in params -%}
+{{ param }}
+{% endfor -%}
+{%- if return_line -%}
+{{ return_line }}
+{% endif %}
+{%- endif -%}
+{%- for ex in examples %}
+
+**{% if ex.name %}Example: {{ ex.name }}{% else %}Example{% endif %}:**
+
+```ruby
+{{ ex.text }}
+```
+{%- endfor -%}
+{%- if behaviors.size > 0 %}
+
+**Tested behaviors:**
+{%- for b in behaviors %}
+- {{ b }}
+{%- endfor -%}
+{%- endif -%}
+{%- for ex in spec_examples %}
+
+**From specs ({{ ex.name }}):**
+
+```ruby
+{{ ex.code }}
+```
+{%- endfor -%}
+{%- if inline_source %}
+
+```ruby
+{{ inline_source }}
+```
+{%- endif -%}

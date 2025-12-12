@@ -1,0 +1,27 @@
+{% comment %}
+Constants section template.
+Variables:
+  - constants: Array of {name:, value:, docstring:, is_complex:}
+  - complex_constants: Array of complex constants for separate rendering
+{% endcomment %}
+## Constants
+{%- assign has_simple = false %}{% for c in constants %}{% unless c.is_complex %}{% assign has_simple = true %}{% endunless %}{% endfor %}
+{%- if has_simple %}
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+{% for c in constants %}{%- unless c.is_complex -%}
+| `{{ c.name }}` | `{{ c.value | escape_pipes }}` | {{ c.docstring | strip_rbs_blocks | strip_newlines }} |
+{% endunless -%}{% endfor -%}
+{%- endif -%}
+{%- for c in complex_constants %}
+
+### {{ c.name }}
+{% assign clean_doc = c.docstring | strip_rbs_blocks | normalize_headers: 4 -%}
+{%- if clean_doc != blank %}
+{{ clean_doc }}
+{% endif -%}
+```ruby
+{{ c.name }} = {{ c.value }}
+```
+{%- endfor -%}

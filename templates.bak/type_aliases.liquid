@@ -1,0 +1,26 @@
+{% comment %}
+Type aliases reference page template.
+Variables:
+  - title: Page title
+  - description: Page description
+  - namespaces: Array of { name:, types: [...] } where types have name, definition, description
+{% endcomment %}
+# {{ title }}
+
+> {{ description }}
+
+{% for ns in namespaces %}
+## {{ ns.name }}
+
+{% for type in ns.types %}
+### `{{ type.name }}`
+
+{% if type.description %}{{ type.description }}
+
+{% endif %}
+```rbs
+type {{ type.name }} = {{ type.definition }}
+```
+
+{% endfor %}
+{% endfor %}

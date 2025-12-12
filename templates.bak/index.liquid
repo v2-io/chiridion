@@ -1,0 +1,21 @@
+{% comment %}
+Index page template for documentation.
+Variables:
+  - title: Project title
+  - description: Index page description
+  - classes: Array of {path:, link_path:}
+  - modules: Array of {path:, link_path:}
+{% endcomment %}
+# {{ title }}
+
+> {{ description }}
+
+## Classes
+
+{% for klass in classes %}- [[{{ klass.link_path }}|{{ klass.path }}]]
+{% endfor %}
+
+## Modules
+
+{% for mod in modules %}- [[{{ mod.link_path }}|{{ mod.path }}]]
+{% endfor %}
