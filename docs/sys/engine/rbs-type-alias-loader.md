@@ -1,18 +1,22 @@
 ---
-generated: 2025-12-11T22:51:37Z
-title: Chiridion::Engine::RbsTypeAliasLoader
-type: class
-source: lib/chiridion/engine/rbs_type_alias_loader.rb:22
+generated: 2025-12-12T18:15:02Z
+title: rbs_type_alias_loader.rb
+source: lib/chiridion/engine/rbs_type_alias_loader.rb
+source_url: https://github.com/v2-io/chiridion/blob/main/lib/chiridion/engine/rbs_type_alias_loader.rb#L1
+lines: 116
+type: file
+parent: engine
+primary: Chiridion::Engine::RbsTypeAliasLoader
+namespaces: [Chiridion::Engine::RbsTypeAliasLoader]
+tags: [file, class]
 description: Extracts RBS type alias definitions from generated .rbs files.
-inherits: Object
-parent: "[[engine|Chiridion::Engine]]"
-tags: [engine, rbs-type-alias-loader]
-aliases: [RbsTypeAliasLoader]
-methods: [initialize, load]
-source_url: https://github.com/v2-io/chiridion/blob/main/lib/chiridion/engine/rbs_type_alias_loader.rb#L22
+rbs-type-alias-loader-methods:
+  - load
+  - RbsTypeAliasLoader.new(verbose, logger, rbs_dir)
 ---
 
-# Chiridion::Engine::RbsTypeAliasLoader
+# Class: Chiridion::Engine::RbsTypeAliasLoader
+**Extends:** Object
 
 Extracts RBS type alias definitions from generated .rbs files.
 
@@ -26,8 +30,7 @@ RBS format is straightforward:
     type name = definition
   end
 
-## Example
-
+### Example
 ****
 
 ```ruby
@@ -36,24 +39,19 @@ type_aliases = loader.load
 # => { "Archema" => [{ name: "attribute_value", definition: "...", ... }] }
 ```
 
-
-
-
-
-
+## Attributes / Methods
+`⟨load : Hash{String => Array<Hash>}⟩` — Extract type aliases from generated RBS files.
 
 ## Methods
-
 ### RbsTypeAliasLoader.new(...)
-
-`⟨verbose⟩           `
-`⟨logger ⟩           `
-`⟨rbs_dir = nil⟩     `
+`⟨verbose            ⟩`
+`⟨logger             ⟩`
+`⟨rbs_dir = nil      ⟩`
 ⟶ `RbsTypeAliasLoader` — A new instance of RbsTypeAliasLoader
 
-
+#### Source
 ```ruby
-# lib/chiridion/engine/rbs_type_alias_loader.rb : ~23
+# lib/chiridion/engine/rbs_type_alias_loader.rb:23
 def initialize(verbose, logger, rbs_dir: nil)
   @verbose = verbose
   @logger  = logger
@@ -61,13 +59,12 @@ def initialize(verbose, logger, rbs_dir: nil)
 end
 ```
 
-
 ---
 ### load
 Extract type aliases from generated RBS files.
 
-⟶ `Hash{String =] Array[Hash]}` — Namespace -> array of type definitions
+⟶ `Hash{String => Array<Hash>}` — Namespace -> array of type definitions
+
 
 ---
-
 **Private:** `#parse_rbs_file`:55

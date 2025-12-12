@@ -37,7 +37,7 @@ module Chiridion
 
         # Each namespace
         project.namespaces.each do |ns|
-          filename = namespace_to_filename(ns.path)
+          filename        = namespace_to_filename(ns.path)
           files[filename] = render_namespace(ns)
         end
 
@@ -47,11 +47,11 @@ module Chiridion
       # Render index page.
       def render_index(project)
         frontmatter = {
-          "generated"   => project.generated_at.iso8601,
-          "title"       => @project_title,
-          "type"        => "index",
-          "description" => project.description || "Auto-generated API documentation",
-          "class_count" => project.classes.size,
+          "generated"    => project.generated_at.iso8601,
+          "title"        => @project_title,
+          "type"         => "index",
+          "description"  => project.description || "Auto-generated API documentation",
+          "class_count"  => project.classes.size,
           "module_count" => project.modules.size
         }
 
@@ -124,7 +124,7 @@ module Chiridion
 
       def build_body_data(ns)
         {
-          identity: {
+          identity:        {
             name:       ns.name,
             path:       ns.path,
             type:       ns.type,
@@ -135,7 +135,7 @@ module Chiridion
             rbs_file:   ns.rbs_file
           },
 
-          documentation: {
+          documentation:   {
             docstring:  ns.docstring,
             examples:   ns.examples.map { |e| example_to_hash(e) },
             notes:      ns.notes,
@@ -147,13 +147,13 @@ module Chiridion
             api:        ns.api
           },
 
-          relationships: {
+          relationships:   {
             includes:         ns.includes,
             extends:          ns.extends,
             referenced_types: ns.referenced_types.map { |t| type_alias_to_hash(t) }
           },
 
-          members: {
+          members:         {
             constants:    ns.constants.map { |c| constant_to_hash(c) },
             type_aliases: ns.type_aliases.map { |t| type_alias_to_hash(t) },
             ivars:        ns.ivars.map { |i| ivar_to_hash(i) },
@@ -167,13 +167,9 @@ module Chiridion
 
       # Convert DocumentModel structs to plain hashes for JSON serialization.
 
-      def example_to_hash(e)
-        { name: e.name, code: e.code }
-      end
+      def example_to_hash(e) = { name: e.name, code: e.code }
 
-      def see_to_hash(s)
-        { target: s.target, text: s.text }
-      end
+      def see_to_hash(s) = { target: s.target, text: s.text }
 
       def type_alias_to_hash(t)
         {
@@ -239,62 +235,56 @@ module Chiridion
         return nil unless y
 
         {
-          description:  y.description,
-          params:       y.params.map { |p| param_to_hash(p) },
-          return_type:  y.return_type,
-          return_desc:  y.return_desc,
-          block_type:   y.block_type
+          description: y.description,
+          params:      y.params.map { |p| param_to_hash(p) },
+          return_type: y.return_type,
+          return_desc: y.return_desc,
+          block_type:  y.block_type
         }
       end
 
-      def raise_to_hash(r)
-        { type: r.type, description: r.description }
-      end
+      def raise_to_hash(r) = { type: r.type, description: r.description }
 
-      def overload_to_hash(o)
-        { signature: o.signature, description: o.description }
-      end
+      def overload_to_hash(o) = { signature: o.signature, description: o.description }
 
       def method_to_hash(m)
         {
-          name:         m.name.to_s,
-          scope:        m.scope,
-          visibility:   m.visibility,
-          signature:    m.signature,
-          rbs_signature: m.rbs_signature,
+          name:              m.name.to_s,
+          scope:             m.scope,
+          visibility:        m.visibility,
+          signature:         m.signature,
+          rbs_signature:     m.rbs_signature,
 
-          docstring:    m.docstring,
-          params:       m.params.map { |p| param_to_hash(p) },
-          options:      m.options.map { |o| option_to_hash(o) },
-          returns:      return_to_hash(m.returns),
-          yields:       yield_to_hash(m.yields),
-          raises:       m.raises.map { |r| raise_to_hash(r) },
-          examples:     m.examples.map { |e| example_to_hash(e) },
-          notes:        m.notes,
-          see_also:     m.see_also.map { |s| see_to_hash(s) },
+          docstring:         m.docstring,
+          params:            m.params.map { |p| param_to_hash(p) },
+          options:           m.options.map { |o| option_to_hash(o) },
+          returns:           return_to_hash(m.returns),
+          yields:            yield_to_hash(m.yields),
+          raises:            m.raises.map { |r| raise_to_hash(r) },
+          examples:          m.examples.map { |e| example_to_hash(e) },
+          notes:             m.notes,
+          see_also:          m.see_also.map { |s| see_to_hash(s) },
 
-          api:          m.api,
-          deprecated:   m.deprecated,
-          abstract:     m.abstract,
-          since:        m.since,
-          todo:         m.todo,
+          api:               m.api,
+          deprecated:        m.deprecated,
+          abstract:          m.abstract,
+          since:             m.since,
+          todo:              m.todo,
 
-          overloads:    m.overloads.map { |o| overload_to_hash(o) },
+          overloads:         m.overloads.map { |o| overload_to_hash(o) },
 
-          source:       m.source,
+          source:            m.source,
           source_body_lines: m.source_body_lines,
-          file:         m.file,
-          line:         m.line
+          file:              m.file,
+          line:              m.line
         }
       end
 
-      def method_summary(m)
-        {
-          name:  m.name.to_s,
-          scope: m.scope,
-          line:  m.line
-        }
-      end
+      def method_summary(m) = {
+        name:  m.name.to_s,
+        scope: m.scope,
+        line:  m.line
+      }
 
       def render_document(frontmatter, body_data)
         lines = []

@@ -78,7 +78,8 @@ module Chiridion
         include_specs:           config.include_specs,
         verbose:                 config.verbose,
         logger:                  config.logger,
-        inline_source_threshold: config.inline_source_threshold
+        inline_source_threshold: config.inline_source_threshold,
+        output_mode:             config.output_mode
       )
       engine.refresh
     end
@@ -96,7 +97,8 @@ module Chiridion
         include_specs:           config.include_specs,
         verbose:                 config.verbose,
         logger:                  config.logger,
-        inline_source_threshold: config.inline_source_threshold
+        inline_source_threshold: config.inline_source_threshold,
+        output_mode:             config.output_mode
       )
       engine.check
     end

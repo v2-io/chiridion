@@ -46,22 +46,70 @@ module Chiridion
       # @param registry [YARD::Registry] Parsed YARD registry
       # @param title [String] Project title
       # @param description [String] Project description
+      # @param root [String] Project root for relative path calculation
       # @return [ProjectDoc] Complete documentation structure
-      def extract(registry, title: "API Documentation", description: nil)
+      def extract(registry, title: "API Documentation", description: nil, root: Dir.pwd)
         namespaces = registry.all(:class, :module)
                              .select { |obj| should_document?(obj) }
                              .map { |obj| extract_namespace(obj) }
 
+        files = group_by_file(namespaces, root)
+
         ProjectDoc.new(
-          title:         title,
-          description:   description,
-          namespaces:    namespaces,
-          type_aliases:  @type_aliases.transform_values { |types| types.map { |t| to_type_alias_doc(t) } },
-          generated_at:  Time.now.utc
+          title:        title,
+          description:  description,
+          namespaces:   namespaces,
+          files:        files,
+          type_aliases: @type_aliases.transform_values { |types| types.map { |t| to_type_alias_doc(t) } },
+          generated_at: Time.now.utc
         )
       end
 
       private
+
+      # Group namespaces by their source file.
+      #
+      # Creates FileDoc entries for each unique source file, collecting all
+      # namespaces defined in that file. Also associates type aliases with
+      # their defining files.
+      #
+      # @param namespaces [Array<NamespaceDoc>] All extracted namespaces
+      # @param root [String] Project root for relative path calculation
+      # @return [Array<FileDoc>] Namespaces grouped by source file
+      def group_by_file(namespaces, root)
+        # Group namespaces by their source file
+        by_file = Hash.new { |h, k| h[k] = [] }
+
+        namespaces.each do |ns|
+          next unless ns.file
+
+          relative_path = make_relative(ns.file, root)
+          by_file[relative_path] << ns
+        end
+
+        # Create FileDoc for each file
+        by_file.map do |path, file_namespaces|
+          # Collect type aliases from these namespaces
+          file_aliases = file_namespaces.flat_map(&:type_aliases)
+
+          # Try to get line count
+          absolute_path = File.join(root, path)
+          line_count    = File.exist?(absolute_path) ? File.read(absolute_path).lines.count : nil
+
+          FileDoc.new(
+            path:         path,
+            namespaces:   file_namespaces.sort_by(&:path),
+            type_aliases: file_aliases,
+            line_count:   line_count
+          )
+        end.sort_by(&:path)
+      end
+
+      def make_relative(absolute_path, root)
+        return absolute_path unless absolute_path&.start_with?(root)
+
+        absolute_path.delete_prefix("#{root}/")
+      end
 
       def should_document?(obj)
         return true unless @namespace_filter
@@ -71,7 +119,7 @@ module Chiridion
 
       # Extract complete namespace (class/module) documentation.
       def extract_namespace(obj)
-        path = obj.path
+        path     = obj.path
         is_class = obj.is_a?(YARD::CodeObjects::ClassObject)
 
         NamespaceDoc.new(
@@ -111,14 +159,10 @@ module Chiridion
         end
       end
 
-      def extract_notes(obj)
-        obj.tags(:note).map(&:text)
-      end
+      def extract_notes(obj) = obj.tags(:note).map(&:text)
 
-      def extract_see_tags(obj)
-        obj.tags(:see).map do |t|
-          SeeDoc.new(target: t.name, text: t.text)
-        end
+      def extract_see_tags(obj) = obj.tags(:see).map do |t|
+        SeeDoc.new(target: t.name, text: t.text)
       end
 
       def extract_deprecated(obj)
@@ -175,7 +219,7 @@ module Chiridion
           if source_info[:attr_type] == :reader
             readers[m.name.to_s] = extract_method(m, class_path, :instance)
           elsif source_info[:attr_type] == :writer
-            name = m.name.to_s.chomp("=")
+            name          = m.name.to_s.chomp("=")
             writers[name] = extract_method(m, class_path, :instance)
           end
         end
@@ -222,9 +266,7 @@ module Chiridion
       def resolve_attr_description(name, class_path, reader, writer)
         # Check RBS attr_types first
         rbs_data = @rbs_attr_types.dig(class_path, name)
-        if rbs_data.is_a?(Hash) && rbs_data[:desc]
-          return rbs_data[:desc] unless rbs_data[:desc].empty?
-        end
+        return rbs_data[:desc] if rbs_data.is_a?(Hash) && rbs_data[:desc] && !rbs_data[:desc].empty?
 
         # Fall back to YARD descriptions
         reader&.returns&.description || writer&.params&.first&.description
@@ -233,7 +275,7 @@ module Chiridion
       def extract_methods(obj, class_path, visibility)
         scope_methods = []
 
-        %i[instance class].each do |scope|
+        [:instance, :class].each do |scope|
           obj.meths(scope: scope, visibility: visibility).each do |m|
             method_doc = extract_method(m, class_path, scope)
             # Skip pure attr methods (already in attributes)
@@ -251,7 +293,7 @@ module Chiridion
         source_info = extract_source(meth)
 
         # Extract and merge params
-        yard_params = extract_yard_params(meth)
+        yard_params   = extract_yard_params(meth)
         merged_params = merge_params(yard_params, rbs_data)
 
         # Extract options for hash params, merging with RBS record types
@@ -353,23 +395,20 @@ module Chiridion
         yard_options.map do |opt|
           param_name = opt.name.to_s
 
-          # Extract key name from YARD tag
-          key_name = nil
-          if opt.respond_to?(:pair) && opt.pair
-            key_name = opt.pair.is_a?(Array) ? opt.pair.first : opt.pair
-          end
-          key_name ||= opt.tag_name if opt.respond_to?(:tag_name)
-          key_name = key_name.to_s.delete_prefix(":") if key_name
-          key_name ||= "unknown"
+          # @option tags have a nested DefaultTag in `pair` containing the key info
+          pair = opt.pair
+          key_name    = pair&.name&.to_s&.delete_prefix(":") || "unknown"
+          yard_type   = pair&.types&.first
+          description = pair&.text
 
-          # Look up RBS type for this key
+          # Look up RBS type for this key (RBS wins over YARD)
           rbs_type = rbs_record_types.dig(param_name, key_name)
 
           OptionDoc.new(
             param_name:  param_name,
             key:         key_name,
-            type:        rbs_type || opt.types&.first, # RBS wins
-            description: opt.text
+            type:        rbs_type || yard_type,
+            description: description
           )
         end
       end
@@ -390,7 +429,7 @@ module Chiridion
           next unless type_str
 
           # Check if it's a record type { key: Type, ... }
-          parsed = parse_rbs_record_type(type_str)
+          parsed                  = parse_rbs_record_type(type_str)
           result[param_name.to_s] = parsed if parsed.any?
         end
         result
@@ -412,15 +451,15 @@ module Chiridion
 
         result = {}
         # Split on commas, respecting nested brackets/braces
-        pairs = split_record_pairs(inner)
+        pairs  = split_record_pairs(inner)
 
         pairs.each do |pair|
           # Match "key: Type" or "key?: Type"
-          if (match = pair.match(/\A(\w+)\??\s*:\s*(.+)\z/))
-            key = match[1]
-            type = match[2].strip
-            result[key] = type
-          end
+          next unless (match = pair.match(/\A(\w+)\??\s*:\s*(.+)\z/))
+
+          key                = match[1]
+          type               = match[2].strip
+          result[key]        = type
         end
 
         result
@@ -432,14 +471,16 @@ module Chiridion
       def split_record_pairs(str)
         return [] if str.nil? || str.strip.empty?
 
-        pairs = []
+        pairs   = []
         current = +""
-        depth = 0
+        depth   = 0
 
         str.each_char do |c|
           case c
-          when "[", "(", "{" then depth += 1; current << c
-          when "]", ")", "}" then depth -= 1; current << c
+          when "[", "(", "{" then depth += 1
+                                  current << c
+          when "]", ")", "}" then depth -= 1
+                                  current << c
           when ","
             if depth.zero?
               pairs << current.strip unless current.strip.empty?
@@ -457,20 +498,25 @@ module Chiridion
       end
 
       def extract_return(meth, rbs_data)
-        yard_tag = meth.tag(:return)
+        yard_tag  = meth.tag(:return)
+        yard_type = yard_tag&.types&.first
 
         if rbs_data&.dig(:returns)
-          rbs_ret = rbs_data[:returns]
+          rbs_ret  = rbs_data[:returns]
           rbs_type = rbs_ret.is_a?(Hash) ? rbs_ret[:type] : rbs_ret
           rbs_desc = rbs_ret.is_a?(Hash) ? rbs_ret[:desc] : nil
 
+          # If RBS says void but YARD has a type (e.g., auto-generated for initialize),
+          # prefer YARD's type. This handles `# @rbs () -> void` on initialize methods.
+          final_type = (rbs_type == "void" && yard_type) ? yard_type : rbs_type
+
           ReturnDoc.new(
-            type:        rbs_type,
+            type:        final_type,
             description: merge_descriptions(yard_tag&.text, rbs_desc)
           )
         elsif yard_tag
           ReturnDoc.new(
-            type:        yard_tag.types&.first,
+            type:        yard_type,
             description: yard_tag.text
           )
         end
@@ -482,13 +528,13 @@ module Chiridion
       # names/descriptions by position. RBS provides authoritative types,
       # YARD provides semantic names and descriptions.
       def extract_yields(meth, rbs_data)
-        yield_tag = meth.tag(:yield)
+        yield_tag   = meth.tag(:yield)
         yieldparams = meth.tags(:yieldparam)
         yieldreturn = meth.tag(:yieldreturn)
 
         # Extract RBS block info
-        block_type = nil
-        block_desc = nil
+        block_type        = nil
+        block_desc        = nil
         block_param_types = []
         block_return_type = nil
 
@@ -501,7 +547,7 @@ module Chiridion
 
             # Parse block type to extract positional param types and return type
             if block_type
-              parsed = parse_block_type(block_type)
+              parsed            = parse_block_type(block_type)
               block_param_types = parsed[:param_types]
               block_return_type = parsed[:return_type]
             end
@@ -523,11 +569,11 @@ module Chiridion
         end
 
         YieldDoc.new(
-          description:  yield_tag&.text || block_desc,
-          params:       merged_params,
-          return_type:  block_return_type || yieldreturn&.types&.first,
-          return_desc:  yieldreturn&.text,
-          block_type:   block_type
+          description: yield_tag&.text || block_desc,
+          params:      merged_params,
+          return_type: block_return_type || yieldreturn&.types&.first,
+          return_desc: yieldreturn&.text,
+          block_type:  block_type
         )
       end
 
@@ -541,7 +587,7 @@ module Chiridion
         clean = block_type.strip.delete_prefix("{").delete_suffix("}").delete_prefix("^").strip
 
         if (match = clean.match(/\A\(([^)]*)\)\s*->\s*(.+)\z/))
-          params_str = match[1]
+          params_str  = match[1]
           return_type = match[2].strip
 
           { param_types: split_type_params(params_str), return_type: return_type }
@@ -556,14 +602,16 @@ module Chiridion
       def split_type_params(str)
         return [] if str.nil? || str.strip.empty?
 
-        params = []
+        params  = []
         current = +""
-        depth = 0
+        depth   = 0
 
         str.each_char do |c|
           case c
-          when "[", "(" then depth += 1; current << c
-          when "]", ")" then depth -= 1; current << c
+          when "[", "(" then depth += 1
+                             current << c
+          when "]", ")" then depth -= 1
+                             current << c
           when ","
             if depth.zero?
               params << current.strip unless current.strip.empty?
@@ -589,7 +637,9 @@ module Chiridion
         # Add RBS raises if present
         if rbs_data&.dig(:raises)
           rbs_raise = rbs_data[:raises]
-          yard_raises << RaiseDoc.new(type: rbs_raise, description: nil) unless yard_raises.any? { |r| r.type == rbs_raise }
+          yard_raises << RaiseDoc.new(type: rbs_raise, description: nil) unless yard_raises.any? do |r|
+            r.type == rbs_raise
+          end
         end
 
         yard_raises
@@ -614,10 +664,14 @@ module Chiridion
       def clean_docstring(str)
         return "" if str.nil? || str.empty?
 
-        str.lines
-           .reject { |line| line.strip.match?(/^rubocop:(disable|enable|todo)\b/i) }
-           .join
-           .strip
+        # Strip @rbs! blocks (multi-line RBS annotations meant for RBS::Inline)
+        # The block continues while lines are indented (start with whitespace)
+        cleaned = str.gsub(/@rbs!\s*\n(?:\s+.*(?:\n|\z))*/, "")
+
+        cleaned.lines
+               .reject { |line| line.strip.match?(/^rubocop:(disable|enable|todo)\b/i) }
+               .join
+               .strip
       end
 
       def compute_end_line(obj)
@@ -652,7 +706,8 @@ module Chiridion
         end
 
         if (writer_match = lines[0].match(/\Adef\s+(\w+)=\((\w+)\)\z/)) && lines[1].match(/\A@(\w+)\s*=\s*(\w+)\z/)
-          return { source: "def #{writer_match[1]}=(#{writer_match[2]}) = (@#{writer_match[1]} = #{writer_match[2]})", attr_type: :writer }
+          return { source:    "def #{writer_match[1]}=(#{writer_match[2]}) = (@#{writer_match[1]} = #{writer_match[2]})",
+                   attr_type: :writer }
         end
 
         nil
@@ -670,13 +725,9 @@ module Chiridion
            .downcase
       end
 
-      def method_spec_examples(class_path, method_name)
-        lookup_spec_data(class_path, :method_examples, method_name)
-      end
+      def method_spec_examples(class_path, method_name) = lookup_spec_data(class_path, :method_examples, method_name)
 
-      def method_spec_behaviors(class_path, method_name)
-        lookup_spec_data(class_path, :behaviors, method_name)
-      end
+      def method_spec_behaviors(class_path, method_name) = lookup_spec_data(class_path, :behaviors, method_name)
 
       def lookup_spec_data(class_path, category, method_name)
         return [] unless @spec_examples[class_path]

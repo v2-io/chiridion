@@ -306,9 +306,7 @@ module Chiridion
         @template_renderer.render_types(types: types_data)
       end
 
-      def partition_constants(constants)
-        constants.partition { |c| !complex_constant?(c) }
-      end
+      def partition_constants(constants) = constants.partition { |c| !complex_constant?(c) }
 
       def complex_constant?(c)
         value = c[:value].to_s

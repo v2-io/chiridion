@@ -68,27 +68,27 @@ module Chiridion
           if in_rbs_block
             # Track nested class declarations inside @rbs! blocks
             if line =~ /^\s*#\s+class\s+(\w+)/
-              rbs_block_class = Regexp.last_match(1)
+              Regexp.last_match(1)
             elsif line =~ /^\s*#\s+attr_(?:accessor|reader|writer)\s+(\w+):\s*(.+)$/
-              attr_name   = Regexp.last_match(1)
-              attr_type   = Regexp.last_match(2).strip
-              base_class  = current_namespace(namespace_stack)
+              attr_name                  = Regexp.last_match(1)
+              attr_type                  = Regexp.last_match(2).strip
+              base_class                 = current_namespace(namespace_stack)
               # Use nested class from @rbs! block if present
-              full_class  = rbs_block_class ? "#{base_class}::#{rbs_block_class}" : base_class
+              full_class                 = rbs_block_class ? "#{base_class}::#{rbs_block_class}" : base_class
               # Store as { type:, desc: } for consistency (no desc in @rbs! format)
               (@attr_types[full_class] ||= {})[attr_name] = { type: attr_type, desc: nil } unless full_class.empty?
             elsif line !~ /^\s*#/ # Non-comment line ends @rbs! block
               in_rbs_block    = false
-              rbs_block_class = nil
+              nil
             end
           end
 
           # Parse Struct.new/Data.define member annotations: :name, #: Type -- description
           if pending_struct && line =~ /:(\w+),?\s*#:\s*(.+)$/
-            attr_name        = Regexp.last_match(1)
-            type_and_desc    = Regexp.last_match(2).strip
-            type, desc       = type_and_desc.split(/\s+--\s+/, 2)
-            pending_struct[:members] ||= {}
+            attr_name                           = Regexp.last_match(1)
+            type_and_desc                       = Regexp.last_match(2).strip
+            type, desc                          = type_and_desc.split(/\s+--\s+/, 2)
+            pending_struct[:members]          ||= {}
             pending_struct[:members][attr_name] = { type: type.strip, desc: capitalize_first(desc) }
           end
           # Track class/module context - push onto namespace stack with indentation

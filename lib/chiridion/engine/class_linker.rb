@@ -54,7 +54,17 @@ module Chiridion
       def linkify_docstring(text, context: nil)
         return text if text.nil? || text.empty?
 
-        text.gsub(/\{([A-Z][\w:]*)\}/) do |_match|
+        result = text.dup
+
+        # Convert YARD headings (= Title) to markdown headings
+        # Direct 1:1 conversion; normalize_headers filter will adjust levels for context
+        result.gsub!(/^(=+)\s+(.+)$/) do
+          level = Regexp.last_match(1).length
+          "#" * level + " " + Regexp.last_match(2)
+        end
+
+        # Convert {Class} references to wikilinks
+        result.gsub(/\{([A-Z][\w:]*)\}/) do |_match|
           class_ref = Regexp.last_match(1)
           link(class_ref, context: context)
         end

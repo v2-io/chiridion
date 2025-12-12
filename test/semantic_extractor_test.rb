@@ -16,7 +16,7 @@ class SemanticExtractorTest < Minitest::Test
           params:  { "name" => { type: "String", desc: "The name" }, "age" => { type: "Integer", desc: nil } },
           returns: { type: "void", desc: nil }
         },
-        "greet" => {
+        "greet"      => {
           full:    "(String? message) -> String",
           params:  { "message" => { type: "String?", desc: "Optional greeting" } },
           returns: { type: "String", desc: "The greeting" }
@@ -44,18 +44,18 @@ class SemanticExtractorTest < Minitest::Test
     }
 
     @extractor = Chiridion::Engine::SemanticExtractor.new(
-      rbs_types:      @rbs_types,
-      rbs_attr_types: @rbs_attr_types,
-      rbs_ivar_types: @rbs_ivar_types,
-      type_aliases:   @type_aliases,
-      spec_examples:  {},
+      rbs_types:        @rbs_types,
+      rbs_attr_types:   @rbs_attr_types,
+      rbs_ivar_types:   @rbs_ivar_types,
+      type_aliases:     @type_aliases,
+      spec_examples:    {},
       namespace_filter: nil,
-      logger:         nil
+      logger:           nil
     )
   end
 
   def test_param_doc_from_hash
-    h = { name: "foo", types: ["String"], text: "The foo param", default: "nil" }
+    h     = { name: "foo", types: ["String"], text: "The foo param", default: "nil" }
     param = ParamDoc.from_hash(h)
 
     assert_equal "foo", param.name
@@ -104,7 +104,8 @@ class SemanticExtractorTest < Minitest::Test
       visibility:        :public,
       signature:         "def greet(message = nil)",
       docstring:         "Greets someone",
-      params:            [ParamDoc.new(name: "message", type: "String?", description: nil, default: "nil", prefix: nil)],
+      params:            [ParamDoc.new(name: "message", type: "String?", description: nil, default: "nil",
+                                       prefix: nil)],
       options:           [],
       returns:           ReturnDoc.new(type: "String", description: "The greeting"),
       yields:            nil,
@@ -137,11 +138,11 @@ class SemanticExtractorTest < Minitest::Test
 
   def test_yield_doc_structure
     yield_doc = YieldDoc.new(
-      description:  "Yields control to block",
-      params:       [ParamDoc.new(name: "item", type: "String", description: "The item", default: nil, prefix: nil)],
-      return_type:  "void",
-      return_desc:  nil,
-      block_type:   "^(String) -> void"
+      description: "Yields control to block",
+      params:      [ParamDoc.new(name: "item", type: "String", description: "The item", default: nil, prefix: nil)],
+      return_type: "void",
+      return_desc: nil,
+      block_type:  "^(String) -> void"
     )
 
     assert_equal "Yields control to block", yield_doc.description
@@ -218,11 +219,12 @@ class SemanticExtractorTest < Minitest::Test
     )
 
     project = ProjectDoc.new(
-      title:         "Test Project",
-      description:   "A test",
-      namespaces:    [ns_class, ns_module],
-      type_aliases:  {},
-      generated_at:  Time.now
+      title:        "Test Project",
+      description:  "A test",
+      namespaces:   [ns_class, ns_module],
+      files:        [],
+      type_aliases: {},
+      generated_at: Time.now
     )
 
     assert_equal 1, project.classes.size

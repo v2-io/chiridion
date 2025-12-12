@@ -112,10 +112,14 @@ module Chiridion
       def clean_docstring(str)
         return "" if str.nil? || str.empty?
 
-        str.lines
-           .reject { |line| line.strip.match?(/^rubocop:(disable|enable|todo)\b/i) }
-           .join
-           .strip
+        # Strip @rbs! blocks (multi-line RBS annotations meant for RBS::Inline)
+        # The block continues while lines are indented (start with whitespace)
+        cleaned = str.gsub(/@rbs!\s*\n(?:\s+.*(?:\n|\z))*/, "")
+
+        cleaned.lines
+               .reject { |line| line.strip.match?(/^rubocop:(disable|enable|todo)\b/i) }
+               .join
+               .strip
       end
 
       def extract_methods(obj, class_path)

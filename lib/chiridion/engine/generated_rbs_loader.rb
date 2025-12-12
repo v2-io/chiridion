@@ -95,12 +95,12 @@ module Chiridion
         pending_comment = nil
         pending_method  = nil  # For collecting method overloads
 
-        lines.each_with_index do |line, idx|
+        lines.each_with_index do |line, _idx|
           stripped = line.strip
 
           # Track module/class context
           if stripped =~ /^(?:class|module)\s+([\w:]+)/
-            name = Regexp.last_match(1)
+            name            = Regexp.last_match(1)
             namespace_stack.push(name)
             pending_comment = nil
             next
@@ -132,12 +132,12 @@ module Chiridion
             ivar_name = Regexp.last_match(1)
             ivar_type = Regexp.last_match(2).strip
 
-            ivars[current_namespace] ||= {}
+            ivars[current_namespace]          ||= {}
             ivars[current_namespace][ivar_name] = {
               type: ivar_type,
               desc: extract_first_line_desc(pending_comment)
             }
-            pending_comment = nil
+            pending_comment                     = nil
             next
           end
 
@@ -146,12 +146,12 @@ module Chiridion
             attr_name = Regexp.last_match(1)
             attr_type = Regexp.last_match(2).strip
 
-            attrs[current_namespace] ||= {}
+            attrs[current_namespace]          ||= {}
             attrs[current_namespace][attr_name] = {
               type: attr_type,
               desc: extract_first_line_desc(pending_comment)
             }
-            pending_comment = nil
+            pending_comment                     = nil
             next
           end
 
@@ -166,7 +166,7 @@ module Chiridion
               definition:  type_def,
               description: pending_comment
             }
-            pending_comment = nil
+            pending_comment                   = nil
             next
           end
 
@@ -180,13 +180,13 @@ module Chiridion
 
             # Check if this is a continuation (overload) of previous method
             if pending_method == method_name
-              overloads[current_namespace] ||= {}
+              overloads[current_namespace]              ||= {}
               overloads[current_namespace][method_name] ||= []
               overloads[current_namespace][method_name] << full_sig
             else
               # New method - parse signature and store
               signatures[current_namespace][method_name] = parse_signature(full_sig, pending_comment)
-              pending_method = method_name
+              pending_method                             = method_name
             end
 
             pending_comment = nil
@@ -197,7 +197,7 @@ module Chiridion
           if stripped.start_with?("|") && pending_method
             overload_sig = stripped.sub(/^\|\s*/, "").strip
 
-            overloads[current_namespace] ||= {}
+            overloads[current_namespace]                 ||= {}
             overloads[current_namespace][pending_method] ||= []
             overloads[current_namespace][pending_method] << overload_sig
             next
@@ -249,14 +249,10 @@ module Chiridion
             end
 
             # @rbs return: Type -- description
-            if line =~ /@rbs\s+return:\s*\S+\s+--\s+(.+)$/
-              return_desc = capitalize_first(Regexp.last_match(1))
-            end
+            return_desc = capitalize_first(Regexp.last_match(1)) if line =~ /@rbs\s+return:\s*\S+\s+--\s+(.+)$/
 
             # @rbs raises: Type
-            if line =~ /@rbs\s+raises:\s*(.+)$/
-              raises_type = Regexp.last_match(1).strip
-            end
+            raises_type = Regexp.last_match(1).strip if line =~ /@rbs\s+raises:\s*(.+)$/
           end
         end
 
@@ -292,8 +288,8 @@ module Chiridion
       def parse_single_param(param, result, descriptions)
         # Keyword arg: `?name: Type` or `name: Type`
         if param =~ /\A\??(\w+):\s*(.+)\z/
-          name = Regexp.last_match(1)
-          type = Regexp.last_match(2).strip
+          name         = Regexp.last_match(1)
+          type         = Regexp.last_match(2).strip
           result[name] = { type: type, desc: descriptions[name] }
         # Block param: `?{ (Type) -> Type }` or `^(Type) -> Type`
         elsif param =~ /\A\??[{^]/
@@ -301,8 +297,8 @@ module Chiridion
           result["&block"] = { type: param, desc: descriptions["block"] }
         # Positional: `?Type name` or `Type name`
         elsif param =~ /\A\??(.+?)\s+(\w+)\z/
-          type = Regexp.last_match(1).strip
-          name = Regexp.last_match(2)
+          type         = Regexp.last_match(1).strip
+          name         = Regexp.last_match(2)
           result[name] = { type: type, desc: descriptions[name] }
         end
       end

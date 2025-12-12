@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require "logger"
 
 module Chiridion
   # Documentation engine for generating agent-oriented docs from Ruby source.
@@ -62,6 +63,7 @@ module Chiridion
     # @param project_title [String] Title for the documentation index.
     # @param index_description [String, nil] Custom description for the index page.
     # @param inline_source_threshold [Integer, nil] Max body lines for inline source display.
+    # @param output_mode [:per_class, :per_file] Output organization strategy.
     def initialize(
       paths:,
       output:,
@@ -77,7 +79,8 @@ module Chiridion
       github_branch: "main",
       project_title: "API Documentation",
       index_description: nil,
-      inline_source_threshold: 10
+      inline_source_threshold: 10,
+      output_mode: :per_class
     )
       @paths                   = Array(paths)
       @output                  = output
@@ -94,6 +97,7 @@ module Chiridion
       @project_title           = project_title
       @index_description       = index_description
       @inline_source_threshold = inline_source_threshold
+      @output_mode             = output_mode
     end
 
     # Generate documentation from source and write to output directory.
@@ -114,9 +118,55 @@ module Chiridion
       @logger.info "Parsing Ruby files in #{paths_description}..."
 
       load_sources
-      doc_structure = extract_documentation(YARD::Registry)
-      write_documentation(doc_structure)
+
+      if @output_mode == :per_file
+        refresh_per_file
+      else
+        doc_structure = extract_documentation(YARD::Registry)
+        write_documentation(doc_structure)
+      end
+
       @logger.info "Documentation written to #{@output}/"
+    end
+
+    # Generate per-file documentation using the semantic extraction pipeline.
+    #
+    # Produces one markdown file per source file, containing all namespaces
+    # (classes/modules) defined in that file.
+    #
+    # @return [void]
+    def refresh_per_file
+      extractor = SemanticExtractor.new(
+        rbs_types:        @rbs_types,
+        rbs_attr_types:   @rbs_attr_types,
+        type_aliases:     @type_aliases,
+        spec_examples:    @spec_examples,
+        namespace_filter: @namespace_filter,
+        logger:           @logger
+      )
+
+      project = extractor.extract(
+        YARD::Registry,
+        title:       @project_title,
+        description: @index_description,
+        root:        @root
+      )
+
+      writer = FileWriter.new(
+        output:                  @output,
+        namespace_strip:         @namespace_strip,
+        include_specs:           @include_specs,
+        verbose:                 @verbose,
+        logger:                  @logger,
+        root:                    @root,
+        github_repo:             @github_repo,
+        github_branch:           @github_branch,
+        project_title:           @project_title,
+        index_description:       @index_description,
+        inline_source_threshold: @inline_source_threshold
+      )
+
+      writer.write(project)
     end
 
     # Check for documentation drift without writing files.
@@ -299,3 +349,11 @@ require_relative "engine/template_renderer"
 require_relative "engine/renderer"
 require_relative "engine/writer"
 require_relative "engine/drift_checker"
+
+# Semantic extraction and per-file output pipeline
+require_relative "engine/document_model"
+require_relative "engine/semantic_extractor"
+require_relative "engine/semantic_renderer"
+require_relative "engine/file_renderer"
+require_relative "engine/file_writer"
+require_relative "engine/post_processor"

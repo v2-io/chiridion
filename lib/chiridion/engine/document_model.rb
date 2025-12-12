@@ -226,11 +226,68 @@ module Chiridion
         :referenced_types   # Array[TypeAliasDoc] - types used by this class
       )
 
+      # Documentation for a single source file.
+      #
+      # Groups all namespaces (classes/modules) defined in one Ruby file.
+      # This is the primary unit for per-file documentation output.
+      FileDoc = Data.define(
+        :path,              # String - source file path (relative to project root)
+        :namespaces,        # Array[NamespaceDoc] - classes/modules in this file
+        :type_aliases,      # Array[TypeAliasDoc] - type aliases defined in this file
+        :line_count         # Integer? - total lines in source file
+      ) do
+        # Short filename for display (e.g., "attributes.rb")
+        def filename = File.basename(path)
+
+        # Directory portion (e.g., "lib/archema")
+        def dirname = File.dirname(path)
+
+        # Main namespace - the one that best represents this file's purpose.
+        #
+        # Selection order:
+        # 1. Namespace whose name matches filename (query.rb -> Query)
+        # 2. Module (often the container for nested classes)
+        # 3. Shortest path (top-level namespace)
+        # 4. Most content as tiebreaker
+        def primary_namespace
+          return namespaces.first if namespaces.size == 1
+          return nil if namespaces.empty?
+
+          basename = File.basename(path, ".rb")
+          # Convert snake_case to variations for matching
+          name_variants = [
+            basename,                                    # document_model
+            basename.gsub("_", ""),                      # documentmodel
+            basename.split("_").map(&:capitalize).join  # DocumentModel
+          ]
+
+          # Try to find namespace whose name matches filename
+          name_match = namespaces.find do |n|
+            name_variants.any? { |v| n.name.downcase == v.downcase }
+          end
+          return name_match if name_match
+
+          # Prefer modules (they're usually the container)
+          modules_list = namespaces.select { |n| n.type == :module }
+          if modules_list.any?
+            # Among modules, prefer shortest path (top-level)
+            return modules_list.min_by { |n| n.path.count("::") }
+          end
+
+          # Among classes, prefer shortest path
+          namespaces.min_by { |n| n.path.count("::") }
+        end
+
+        def classes = namespaces.select { |n| n.type == :class }
+        def modules = namespaces.select { |n| n.type == :module }
+      end
+
       # Complete documentation structure for a project.
       ProjectDoc = Data.define(
         :title,             # String - project title
         :description,       # String? - project description
         :namespaces,        # Array[NamespaceDoc] - all documented classes/modules
+        :files,             # Array[FileDoc] - per-file documentation (for per-file output)
         :type_aliases,      # Hash[String, Array[TypeAliasDoc]] - global type aliases
         :generated_at       # Time - generation timestamp
       ) do

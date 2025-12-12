@@ -1,47 +1,46 @@
 ---
-generated: 2025-12-11T22:51:37Z
-title: Chiridion::Engine::Writer
-type: class
-source: lib/chiridion/engine/writer.rb:11
+generated: 2025-12-12T17:59:26Z
+title: writer.rb
+source: lib/chiridion/engine/writer.rb
+source_url: https://github.com/v2-io/chiridion/blob/main/lib/chiridion/engine/writer.rb#L1
+lines: 134
+type: file
+parent: engine
+primary: Chiridion::Engine::Writer
+namespaces: [Chiridion::Engine::Writer]
+tags: [file, class]
 description: Writes generated documentation files to disk.
-inherits: Object
-parent: "[[engine|Chiridion::Engine]]"
-tags: [engine, writer]
-aliases: [Writer]
-methods: [initialize, write]
-source_url: https://github.com/v2-io/chiridion/blob/main/lib/chiridion/engine/writer.rb#L11
+writer-methods:
+  - write(structure)
+  - Writer.new(output, namespace_strip, include_specs, verbose, logger, root, github_repo, github_branch, project_title, index_description, inline_source_threshold, rbs_attr_types)
 ---
 
-# Chiridion::Engine::Writer
+# Class: Chiridion::Engine::Writer
+**Extends:** Object
 
 Writes generated documentation files to disk.
 
 Handles smart write detection to avoid unnecessary file updates when
 only timestamps have changed but content is identical.
 
-
-
-
-
-
+## Attributes / Methods
+`⟨write(…)⟩` — Write all documentation files.
 
 ## Methods
-
 ### Writer.new(...)
-
-`⟨output                 ⟩                      `
-`⟨namespace_strip        ⟩                      `
-`⟨include_specs          ⟩                      `
-`⟨verbose                ⟩                      `
-`⟨logger                 ⟩                      `
-`⟨root                    = Dir.pwd⟩            `
-`⟨github_repo             = nil⟩                `
-`⟨github_branch           = "main"⟩             `
+`⟨output                                       ⟩`
+`⟨namespace_strip                              ⟩`
+`⟨include_specs                                ⟩`
+`⟨verbose                                      ⟩`
+`⟨logger                                       ⟩`
+`⟨root                    = Dir.pwd            ⟩`
+`⟨github_repo             = nil                ⟩`
+`⟨github_branch           = "main"             ⟩`
 `⟨project_title           = "API Documentation"⟩`
-`⟨index_description       = nil⟩                `
-`⟨inline_source_threshold = 10⟩                 `
-⟶ `Writer                                       ` — A new instance of Writer
-
+`⟨index_description       = nil                ⟩`
+`⟨inline_source_threshold = 10                 ⟩`
+`⟨rbs_attr_types          = {}                 ⟩`
+⟶ `Writer                                      ` — A new instance of Writer
 
 ---
 ### write(...)
@@ -49,9 +48,9 @@ Write all documentation files.
 
 `⟨structure : Hash⟩` — Documentation structure from Extractor
 
-
+#### Source
 ```ruby
-# lib/chiridion/engine/writer.rb : ~45
+# lib/chiridion/engine/writer.rb:47
 def write(structure)
   FileUtils.mkdir_p(@output)
   written, skipped = write_all_files(structure)
@@ -59,6 +58,6 @@ def write(structure)
 end
 ```
 
----
 
-**Private:** `#content_changed?`:108, `#normalize`:110, `#output_path`:117, `#to_kebab_case`:124, `#write_all_files`:53, `#write_file`:98, `#write_index`:73, `#write_object`:87, `#write_objects`:79, `#write_type_aliases`:63
+---
+**Private:** `#content_changed?`:110, `#normalize`:112, `#output_path`:119, `#to_kebab_case`:126, `#write_all_files`:55, `#write_file`:100, `#write_index`:75, `#write_object`:89, `#write_objects`:81, `#write_type_aliases`:65

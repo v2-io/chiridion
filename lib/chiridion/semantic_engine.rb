@@ -77,9 +77,7 @@ module Chiridion
 
     private
 
-    def paths_description
-      @paths.size == 1 ? @paths.first : "#{@paths.size} paths"
-    end
+    def paths_description = @paths.size == 1 ? @paths.first : "#{@paths.size} paths"
 
     def register_rbs_tag
       return if YARD::Tags::Library.labels.key?(:rbs)

@@ -1,42 +1,41 @@
 ---
-generated: 2025-12-11T22:51:37Z
-title: Chiridion::Engine::SpecExampleLoader
-type: class
-source: lib/chiridion/engine/spec_example_loader.rb:9
+generated: 2025-12-12T17:59:26Z
+title: spec_example_loader.rb
+source: lib/chiridion/engine/spec_example_loader.rb
+source_url: https://github.com/v2-io/chiridion/blob/main/lib/chiridion/engine/spec_example_loader.rb#L1
+lines: 84
+type: file
+parent: engine
+primary: Chiridion::Engine::SpecExampleLoader
+namespaces: [Chiridion::Engine::SpecExampleLoader]
+tags: [file, class]
 description: Extracts usage examples from RSpec files.
-inherits: Object
-parent: "[[engine|Chiridion::Engine]]"
-tags: [engine, spec-example-loader]
-aliases: [SpecExampleLoader]
-methods: [initialize, load]
-source_url: https://github.com/v2-io/chiridion/blob/main/lib/chiridion/engine/spec_example_loader.rb#L9
+spec-example-loader-methods:
+  - load
+  - SpecExampleLoader.new(spec_path, verbose, logger)
 ---
 
-# Chiridion::Engine::SpecExampleLoader
+# Class: Chiridion::Engine::SpecExampleLoader
+**Extends:** Object
 
 Extracts usage examples from RSpec files.
 
 Parses spec files to find `let` declarations, `subject` blocks, and
 test descriptions that can serve as documentation examples.
 
-
-
-
-
-
+## Attributes / Methods
+`⟨load : Hash{String => Hash}⟩` — Load spec examples for all spec files.
 
 ## Methods
-
 ### SpecExampleLoader.new(...)
-
-`⟨spec_path⟩        `
-`⟨verbose  ⟩        `
-`⟨logger   ⟩        `
+`⟨spec_path         ⟩`
+`⟨verbose           ⟩`
+`⟨logger            ⟩`
 ⟶ `SpecExampleLoader` — A new instance of SpecExampleLoader
 
-
+#### Source
 ```ruby
-# lib/chiridion/engine/spec_example_loader.rb : ~10
+# lib/chiridion/engine/spec_example_loader.rb:10
 def initialize(spec_path, verbose, logger)
   @spec_path = spec_path
   @verbose   = verbose
@@ -44,16 +43,15 @@ def initialize(spec_path, verbose, logger)
 end
 ```
 
-
 ---
 ### load
 Load spec examples for all spec files.
 
-⟶ `Hash{String =] Hash}` — Class path => { method_examples:, behaviors:, lets:, subjects: }
+⟶ `Hash{String => Hash}` — Class path => { method_examples:, behaviors:, lets:, subjects: }
 
-
+#### Source
 ```ruby
-# lib/chiridion/engine/spec_example_loader.rb : ~19
+# lib/chiridion/engine/spec_example_loader.rb:19
 def load
   examples   = {}
   spec_files = Dir.glob("#{@spec_path}/**/*_spec.rb")
@@ -66,6 +64,6 @@ def load
 end
 ```
 
----
 
+---
 **Private:** `#extract_behaviors`:70, `#extract_described_class`:49, `#extract_lets`:56, `#extract_subjects`:63, `#parse_file`:32

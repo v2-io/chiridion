@@ -65,6 +65,9 @@ module Chiridion
     #   Set to nil or 0 to disable inline source. Default: 10.
     attr_accessor :inline_source_threshold
 
+    # @return [Symbol] Output organization strategy (:per_class or :per_file)
+    attr_accessor :output_mode
+
     def initialize
       @root                    = Dir.pwd
       @source_path             = "lib"
@@ -79,6 +82,7 @@ module Chiridion
       @verbose                 = false
       @logger                  = nil
       @inline_source_threshold = 10
+      @output_mode             = :per_file
     end
 
     # Namespace prefix to strip from output paths.

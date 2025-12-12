@@ -66,9 +66,11 @@ module Chiridion
           stripped = line.strip
 
           # Track module/class context (RBS uses same syntax)
+          # Reset pending_comment - comments before class/module are for that class, not types inside
           if stripped =~ /^(?:class|module)\s+([\w:]+)/
             name = Regexp.last_match(1)
             namespace_stack.push(name)
+            pending_comment = nil
             next
           end
 
@@ -80,9 +82,9 @@ module Chiridion
 
           # Collect comments (description for next type)
           if stripped.start_with?("#")
-            # Accumulate multi-line comments
-            comment_text    = stripped.sub(/^#\s*/, "")
-            pending_comment = pending_comment ? "#{pending_comment} #{comment_text}" : comment_text
+            # Accumulate multi-line comments, preserving newlines
+            comment_text    = stripped.sub(/^#\s?/, "")
+            pending_comment = pending_comment ? "#{pending_comment}\n#{comment_text}" : comment_text
             next
           end
 

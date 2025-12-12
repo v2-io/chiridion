@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module Chiridion
-  VERSION = "0.2.10"
+  VERSION = "0.3.1"
 end

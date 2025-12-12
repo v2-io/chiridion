@@ -223,6 +223,24 @@ module Chiridion
                })
       end
 
+      # Render a per-file documentation page.
+      #
+      # @param path [String] Source file path (relative)
+      # @param filename [String] Just the filename
+      # @param line_count [Integer, nil] Total lines in source
+      # @param namespaces [Array<Hash>] Namespace data with pre-rendered sections
+      # @param type_aliases [Array<Hash>] File-level type aliases
+      # @return [String] Rendered markdown
+      def render_file(path:, filename:, line_count: nil, namespaces: [], type_aliases: [])
+        render("file", {
+                 "path"         => path,
+                 "filename"     => filename,
+                 "line_count"   => line_count,
+                 "namespaces"   => stringify_keys(namespaces),
+                 "type_aliases" => stringify_keys(type_aliases)
+               })
+      end
+
       private
 
       def default_templates_path = File.expand_path("../../../templates", __dir__)

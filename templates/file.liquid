@@ -1,0 +1,108 @@
+{% comment %}
+Per-file documentation template.
+
+Variables:
+  - path: Source file path (relative)
+  - filename: Just the filename
+  - line_count: Total lines in source
+  - namespaces: Array of namespace objects, each with:
+    - name: Short name
+    - path: Full path (e.g., "Archema::Query")
+    - type: "class" or "module"
+    - superclass: Parent class path (if class)
+    - docstring: Main documentation
+    - mixins: Pre-rendered mixin line
+    - examples: Array of {name:, code:}
+    - notes: Array of note strings
+    - type_aliases: Array of {name:, definition:, description:}
+    - types_section: Pre-rendered referenced types (## Types Used)
+    - constants_section: Pre-rendered constants
+    - summary_section: Pre-rendered attributes + method signatures
+    - methods_section: Pre-rendered methods
+    - private_summary: Pre-rendered private methods list
+{% endcomment %}
+{% for ns in namespaces %}
+{%- unless forloop.first %}
+
+---
+{% endunless %}
+# {{ ns.type | capitalize }}: {{ ns.path }}
+{%- if ns.superclass %}
+
+**Extends:** {{ ns.superclass }}
+{%- endif %}
+{%- if ns.mixins %}
+
+{{ ns.mixins }}
+{%- endif %}
+{%- if ns.abstract %}
+
+> **Abstract:** This {{ ns.type }} must be subclassed.
+{%- endif %}
+{%- if ns.deprecated %}
+
+> **Deprecated:** {{ ns.deprecated }}
+{%- endif %}
+{%- if ns.docstring != blank %}
+
+{{ ns.docstring | normalize_headers: 3 }}
+{%- endif %}
+{%- if ns.notes.size > 0 %}
+{% for note in ns.notes %}
+
+> **Note:** {{ note }}
+{%- endfor %}
+{%- endif %}
+{%- if ns.examples.size > 0 %}
+
+### Example
+{%- for ex in ns.examples %}
+{%- if ex.name != blank %}
+
+**{{ ex.name }}**
+{%- endif %}
+
+```ruby
+{{ ex.code }}
+```
+{%- endfor %}
+{%- endif %}
+{%- if ns.see_also.size > 0 %}
+
+**See also:** {% for see in ns.see_also %}{{ see.target }}{% if see.text %} ({{ see.text }}){% endif %}{% unless forloop.last %}, {% endunless %}{% endfor %}
+{%- endif %}
+{%- if ns.type_aliases.size > 0 %}
+
+## Types
+{%- for ta in ns.type_aliases %}
+
+### {{ ta.name }}
+
+: `{{ ta.definition }}`
+{%- if ta.description != blank %}
+
+{{ ta.description }}
+{%- endif %}
+{%- endfor %}
+{%- endif %}
+{%- if ns.types_section != blank %}
+
+{{ ns.types_section }}
+{%- endif %}
+{%- if ns.constants_section != blank %}
+
+{{ ns.constants_section }}
+{%- endif %}
+{%- if ns.summary_section != blank %}
+
+{{ ns.summary_section }}
+{%- endif %}
+{%- if ns.methods_section != blank %}
+
+{{ ns.methods_section }}
+{%- endif %}
+{%- if ns.private_summary != blank %}
+
+{{ ns.private_summary }}
+{%- endif %}
+{% endfor -%}
