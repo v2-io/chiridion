@@ -133,42 +133,61 @@ Chiridion.configure do |config|
 end
 ```
 
-### toys/dx Integration
+### devex Integration
 
-Create a `tasks/docs.rb`:
+Create a `tools/docs.rb`:
 
 ```ruby
-desc "Generate API documentation"
-tool "docs" do
-  tool "refresh" do
-    flag :verbose, "-v", desc: "Verbose output"
-    def run
-      Chiridion.config.verbose = verbose
-      Chiridion.refresh
-    end
-  end
+# frozen_string_literal: true
 
-  tool "check" do
-    def run
-      Chiridion.check
+desc "Documentation generation tasks"
+
+tool "refresh" do
+  desc "Regenerate API documentation"
+
+  def run
+    require_relative "../lib/myproject"
+
+    Chiridion.configure do |c|
+      c.source_path      = "lib/myproject"
+      c.output           = "docs/sys"
+      c.namespace_filter = "MyProject::"
+      c.verbose          = verbose?  # Uses global -v flag
     end
+    Chiridion.refresh
+  end
+end
+
+tool "check" do
+  desc "Check for documentation drift (CI mode)"
+
+  def run
+    Chiridion.check
   end
 end
 ```
+
+Then run with `dx docs refresh` or `dx docs check`.
 
 ## Development
 
 Chiridion uses itself to generate its own API documentation (dogfooding). The generated docs live in `docs/sys/`.
 
 ```bash
+# Run tests
+dx test
+
+# Lint
+dx lint
+
 # Regenerate Chiridion's own documentation
-toys docs refresh
+dx docs refresh
 
 # Verbose output
-toys docs refresh -v
+dx -v docs refresh
 
 # Check for drift (CI mode - exits 1 if docs are out of sync)
-toys docs check
+dx docs check
 ```
 
 This serves as both a live integration test and a reference for the output format.

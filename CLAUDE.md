@@ -10,12 +10,17 @@ Chiridion (Greek χειρίδιον, "handbook") is an agent-oriented documentat
 
 ```bash
 bundle install          # Install dependencies
-toys test               # Run all tests
-toys test test/foo.rb   # Run specific test file
-toys cop                # Lint
-toys cop --fix          # Lint with auto-fix
-toys docs refresh       # Regenerate docs/sys/
-gem build chiridion.gemspec  # Build gem
+dx test                 # Run all tests
+dx test test/foo.rb     # Run specific test file
+dx lint                 # Run RuboCop linter
+dx lint -a              # Lint with auto-fix
+dx lint -A              # Lint with unsafe auto-fix
+dx docs refresh         # Regenerate docs/sys/
+dx docs check           # CI mode: detect documentation drift
+dx gem build            # Build gem
+dx gem install          # Build and install gem locally
+dx version              # Show version
+dx version bump patch   # Bump patch version
 ```
 
 ## Architecture
