@@ -10,10 +10,10 @@
 
 ## Example
 {%- for ex in examples %}
-{%- if ex.name != blank %}
+{%- unless ex.name == blank or ex.name == '' %}
 
 **{{ ex.name }}**
-{%- endif %}
+{%- endunless %}
 
 ```ruby
 {{ ex.text }}
