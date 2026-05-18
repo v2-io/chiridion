@@ -1,6 +1,21 @@
 # Changelog
 
-## [0.3.4] - 2026-05-18
+## [0.3.5] - 2026-05-18
+
+### Fixed
+
+- **`Engine#check` now supports `:per_file` output mode.** `#refresh`
+  branched on `output_mode` (per_file → `FileWriter`, mirroring source
+  file paths) but `#check` did not — it always used the per-class
+  `DriftChecker`, whose class-name kebab paths (`RefList` → `ref-list/`)
+  do not match what the per_file writer actually produces (`reflist/`,
+  from the source path). Result: every per_file doc was reported
+  simultaneously "missing" and "orphaned". `#check` is now symmetric
+  with `#refresh`; both build the per-file pipeline via one shared
+  `build_per_file_pipeline`, and `FileWriter#check` reuses
+  `FileWriter#output_path` — the divergence existed because path
+  derivation was duplicated, so the fix removes the duplication. Drift
+  semantics unchanged (warn + `exit 1` on drift, quiet otherwise).
 
 ### Fixed
 - Declare `logger` and `base64` as runtime dependencies. Both are Ruby

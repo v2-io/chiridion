@@ -136,6 +136,26 @@ module Chiridion
     #
     # @return [void]
     def refresh_per_file
+      project, writer = build_per_file_pipeline
+      writer.write(project)
+    end
+
+    # Per-file drift check. Mirrors {#refresh_per_file} exactly — same
+    # project, same FileWriter, so the expected paths are computed by
+    # FileWriter#output_path (the source-file-path mirror), NOT by
+    # DriftChecker's class-name kebab logic. Sharing the pipeline is the
+    # fix: the divergence existed because `check` reimplemented path
+    # derivation instead of reusing the writer's. (Bug: per_file output
+    # like `reflist/` was reported orphaned because the class-path
+    # checker expected `ref-list/`.)
+    def check_per_file
+      project, writer = build_per_file_pipeline
+      writer.check(project)
+    end
+
+    # The per-file pipeline, built once and shared by refresh + check so
+    # they can never diverge again.
+    def build_per_file_pipeline
       extractor = SemanticExtractor.new(
         rbs_types:        @rbs_types,
         rbs_attr_types:   @rbs_attr_types,
@@ -166,7 +186,7 @@ module Chiridion
         inline_source_threshold: @inline_source_threshold
       )
 
-      writer.write(project)
+      [project, writer]
     end
 
     # Check for documentation drift without writing files.
@@ -183,8 +203,15 @@ module Chiridion
       @logger.info "Checking documentation drift for #{paths_description}..."
 
       load_sources
-      doc_structure = extract_documentation(YARD::Registry)
-      check_for_drift(doc_structure)
+
+      # Symmetric with #refresh: per_file mode has its own checker so
+      # expected paths match what the per_file writer actually produces.
+      if @output_mode == :per_file
+        check_per_file
+      else
+        doc_structure = extract_documentation(YARD::Registry)
+        check_for_drift(doc_structure)
+      end
     end
 
     private

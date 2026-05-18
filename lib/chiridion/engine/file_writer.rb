@@ -69,7 +69,73 @@ module Chiridion
         @logger.info "  #{counts[:written]} files written, #{counts[:skipped]} unchanged"
       end
 
+      # Per-file drift check. Deliberately mirrors #write step-for-step
+      # and reuses #output_path / @renderer, so the expected paths and
+      # content are exactly what #write would produce — the previous bug
+      # was a SECOND, divergent path implementation (DriftChecker's
+      # class-name kebab) being used for per_file output. Behavior
+      # matches DriftChecker: warn + `exit 1` on drift, quiet otherwise.
+      #
+      # @param project [ProjectDoc] structure from SemanticExtractor
+      # @raise [SystemExit] exit 1 if any drift/missing/orphaned
+      def check(project)
+        @renderer.register_classes(project)
+
+        root_file = find_root_file(project.files)
+        drifted   = []
+        missing   = []
+        expected  = []
+
+        project.files.each do |file_doc|
+          is_root  = root_file && file_doc.path == root_file.path
+          path     = output_path(file_doc.path)
+          expected << path
+          rendered = PostProcessor.process(@renderer.render_file(file_doc, is_root: is_root))
+          compare_doc(path, rendered, drifted, missing)
+        end
+
+        index_path = File.join(@output, "index.md")
+        expected << index_path
+        index_doc = PostProcessor.process(@renderer.render_index(project, index_description: @index_description))
+        compare_doc(index_path, index_doc, drifted, missing)
+
+        orphaned = Dir.glob("#{@output}/**/*.md").reject { |f| expected.include?(f) }
+        report_drift(drifted, missing, orphaned)
+      end
+
       private
+
+      def compare_doc(path, expected_content, drifted, missing)
+        if File.exist?(path)
+          drifted << path if content_changed?(File.read(path), expected_content)
+        else
+          missing << path
+        end
+      end
+
+      def report_drift(drifted, missing, orphaned)
+        if (drifted.size + missing.size + orphaned.size).zero?
+          @logger.info "  No drift detected. Documentation is up to date."
+          return
+        end
+
+        @logger.warn "Documentation drift detected!"
+        @logger.warn ""
+        report_drift_list("Drifted (content changed)", drifted)
+        report_drift_list("Missing (new files)", missing)
+        report_drift_list("Orphaned (files removed)", orphaned)
+        @logger.warn ""
+        @logger.warn "Run 'chiridion refresh' to update documentation."
+
+        exit 1
+      end
+
+      def report_drift_list(label, files)
+        return if files.empty?
+
+        @logger.warn "  #{label}:"
+        files.each { |f| @logger.warn "    - #{f}" }
+      end
 
       # Find the root lib file that matches the namespace.
       # e.g., lib/archema.rb for Archema::, lib/chiridion.rb for Chiridion::
