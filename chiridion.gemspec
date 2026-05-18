@@ -38,4 +38,15 @@ Gem::Specification.new do |spec|
   # Runtime dependencies (dev deps are in Gemfile)
   spec.add_dependency "liquid", "~> 5.5"
   spec.add_dependency "yard", "~> 0.9"
+
+  # Ruby default-gem extractions chiridion needs at runtime. Without these,
+  # chiridion fails to load under bundler on Ruby >= 3.4 (the restricted
+  # load path no longer auto-provides them):
+  #   • logger — required directly (lib/chiridion/engine.rb); also used to
+  #     set YARD's log level. Extracted from default gems in Ruby 3.5/4.0.
+  #   • base64 — required (bare `require "base64"`) by the `liquid`
+  #     dependency, which does not declare it itself. Extracted in 3.4.
+  # Unpinned: both are frozen, tiny stdlib-extraction shims.
+  spec.add_dependency "logger"
+  spec.add_dependency "base64"
 end
